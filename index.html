@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ICF-SL Data Analysis Tool</title>
+    <title>ICF-SL Data Analysis Tool | Hierarchical Grouping</title>
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -53,6 +53,7 @@
         .upload-box input { display: none; }
         .upload-status { font-size: 14px; font-weight: 700; margin-top: 15px; }
         .upload-status.success { color: #28a745; }
+        .upload-status.error { color: #dc3545; }
 
         /* Buttons */
         .btn { padding: 12px 20px; border: 2px solid #004080; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-family: 'Oswald', Arial, sans-serif; transition: all 0.2s; margin: 4px; display: inline-flex; align-items: center; gap: 8px; }
@@ -80,7 +81,7 @@
         .config-card.highlight { background: #e7f3ff; }
 
         /* Variable chips */
-        .var-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+        .var-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; max-height: 200px; overflow-y: auto; padding: 5px; }
         .var-chip { padding: 10px 18px; background: #fff; border: 2px solid #dee2e6; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 13px; transition: all 0.2s; font-family: 'Oswald', Arial, sans-serif; user-select: none; }
         .var-chip:hover { border-color: #004080; background: #e7f3ff; }
         .var-chip.selected { background: #004080; color: #fff; border-color: #004080; }
@@ -119,12 +120,18 @@
         .case-toggle .btn.active { background: #004080; color: #fff; }
 
         /* Tabs */
-        .analysis-tabs { display: flex; border-bottom: 3px solid #004080; margin-bottom: 20px; }
+        .analysis-tabs { display: flex; border-bottom: 3px solid #004080; margin-bottom: 20px; flex-wrap: wrap; }
         .analysis-tab { padding: 15px 25px; cursor: pointer; font-weight: 700; font-size: 14px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 3px solid transparent; margin-bottom: -3px; transition: all 0.2s; }
         .analysis-tab:hover { color: #004080; background: #e7f3ff; }
         .analysis-tab.active { color: #004080; border-bottom-color: #004080; background: #fff; }
         .tab-panel { display: none; }
         .tab-panel.active { display: block; }
+
+        /* Aggregation options */
+        .agg-options { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; }
+        .agg-option { padding: 12px 24px; background: #fff; border: 2px solid #004080; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 14px; color: #004080; font-family: 'Oswald', Arial, sans-serif; transition: all 0.2s; user-select: none; }
+        .agg-option:hover { background: #e7f3ff; }
+        .agg-option.selected { background: #004080; color: #fff; border-color: #004080; }
 
         /* Button group */
         .button-group { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 25px; }
@@ -142,32 +149,25 @@
         .page-footer { background-color: #004080; color: #ffffff; padding: 20px 30px; text-align: center; font-size: 13px; line-height: 1.7; font-weight: 500; border-radius: 0 0 8px 8px; }
         .page-footer p { margin: 6px 0 0; font-size: 12px; color: #ffffff; }
 
-        /* Data preview */
-        .preview-label { font-size: 12px; color: #666; font-weight: 600; margin-bottom: 5px; }
-
-        /* Agg options */
-        .agg-options { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
-        .agg-option { padding: 12px 20px; background: #fff; border: 2px solid #dee2e6; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 13px; transition: all 0.2s; font-family: 'Oswald', Arial, sans-serif; text-align: center; }
-        .agg-option:hover { border-color: #004080; background: #e7f3ff; }
-        .agg-option.selected { background: #004080; color: #fff; border-color: #004080; }
-
-        /* District buttons */
-        .group-btn { padding: 10px 18px; margin: 4px; font-size: 12px; font-weight: 700; border: 2px solid #004080; border-radius: 8px; background: #f8f9fa; color: #004080; cursor: pointer; transition: all 0.2s; font-family: 'Oswald', Arial, sans-serif; text-transform: uppercase; }
-        .group-btn:hover { background: #e7f3ff; }
-        .group-btn.active { background: #004080; color: #fff; }
-
-        /* Filter grid */
+        /* Group Tabs (Main Groups) */
+        .main-group-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; border-bottom: 2px solid #004080; padding-bottom: 8px; }
+        .main-group-btn { padding: 10px 22px; background: #fff; border: 2px solid #004080; border-radius: 30px; font-weight: 700; font-size: 13px; cursor: pointer; transition: all 0.2s; color: #004080; font-family: 'Oswald', Arial, sans-serif; }
+        .main-group-btn.active { background: #004080; color: #fff; }
+        .main-group-btn:hover { background: #004080; color: #fff; }
+        .subgroup-container { margin-top: 15px; background: #f8f9fa; border-left: 5px solid #004080; padding: 12px; border-radius: 8px; }
+        .subgroup-title { font-weight: 700; color: #004080; font-size: 14px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .subgroup-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; }
+        .subgroup-chip { padding: 8px 16px; background: #fff; border: 2px solid #dee2e6; border-radius: 30px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s; }
+        .subgroup-chip.active { background: #004080; color: #fff; border-color: #004080; }
+        .subgroup-chip:hover { border-color: #004080; background: #e7f3ff; }
         .filter-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; padding: 12px; background: #fff; border: 2px solid #004080; border-radius: 6px; max-height: 200px; overflow-y: auto; }
         .filter-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; cursor: pointer; font-size: 12px; transition: all 0.2s; }
         .filter-item:hover { border-color: #004080; background: #e7f3ff; }
         .filter-item.selected { border-color: #28a745; background: #d4edda; }
         .filter-item input { width: 16px; height: 16px; accent-color: #28a745; cursor: pointer; }
-        .filter-item label { cursor: pointer; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .filter-actions { display: flex; gap: 8px; margin-bottom: 8px; }
-        .filter-actions button { padding: 6px 14px; border: 1px solid #004080; border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer; font-family: 'Oswald', Arial, sans-serif; }
-        .filter-actions .sel-all { background: #004080; color: #fff; }
-        .filter-actions .sel-none { background: #fff; color: #004080; }
-
+        
+        .data-preview { background: #f0f0f0; padding: 10px; border-radius: 6px; font-size: 11px; margin-top: 10px; max-height: 150px; overflow: auto; font-family: monospace; }
+        
         @media (max-width: 900px) {
             .form-row, .form-row-3, .summary-cards { grid-template-columns: 1fr; }
             .roadmap-bar { justify-content: center; }
@@ -176,976 +176,675 @@
     </style>
 </head>
 <body>
-    <svg style="display:none;">
-        <symbol id="icon-upload" viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></symbol>
-        <symbol id="icon-settings" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></symbol>
-        <symbol id="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></symbol>
-        <symbol id="icon-refresh" viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></symbol>
-        <symbol id="icon-download" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></symbol>
-        <symbol id="icon-chart" viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99l1.5 1.5z"/></symbol>
-        <symbol id="icon-table" viewBox="0 0 24 24"><path d="M3 3v18h18V3H3zm8 16H5v-6h6v6zm0-8H5V5h6v6zm8 8h-6v-6h6v6zm0-8h-6V5h6v6z"/></symbol>
-        <symbol id="icon-bar" viewBox="0 0 24 24"><path d="M5 9.2h3V19H5V9.2zM10.6 5h2.8v14h-2.8V5zm5.6 8H19v6h-2.8v-6z"/></symbol>
-        <symbol id="icon-filter" viewBox="0 0 24 24"><path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/></symbol>
-    </svg>
+    <svg style="display:none;"><symbol id="icon-upload" viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></symbol><symbol id="icon-settings" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></symbol><symbol id="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></symbol><symbol id="icon-refresh" viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></symbol><symbol id="icon-download" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></symbol></svg>
 
-    <div id="loadingOverlay" class="loading-overlay hidden">
-        <div class="loading-spinner"></div>
-        <div class="loading-text" id="loadingText">Processing...</div>
-    </div>
+    <div id="loadingOverlay" class="loading-overlay hidden"><div class="loading-spinner"></div><div class="loading-text" id="loadingText">Processing...</div></div>
 
     <div class="page-container">
-        <!-- HEADER -->
-        <div class="page-header">
-            <div class="logo-row"><div class="logo-box"><img src="https://github.com/mohamedsillahkanu/gdp-dashboard-2/raw/6c7463b0d5c3be150aafae695a4bcbbd8aeb1499/ICF-SL.jpg" alt="ICF-SL Logo"></div></div>
-            <h3>Informatics Consultancy Firm-Sierra Leone (ICF-SL)</h3>
-            <p class="tagline">Driving Data-Driven Solutions for Health and Development</p>
-            <h1>DATA ANALYSIS TOOL</h1>
-            <p class="subtitle">Upload Data | Select Variables | Analyze Trends | Download Report</p>
-        </div>
+        <div class="page-header"><div class="logo-row"><div class="logo-box"><img src="https://github.com/mohamedsillahkanu/gdp-dashboard-2/raw/6c7463b0d5c3be150aafae695a4bcbbd8aeb1499/ICF-SL.jpg" alt="ICF-SL Logo"></div></div><h3>Informatics Consultancy Firm-Sierra Leone (ICF-SL)</h3><p class="tagline">Driving Data-Driven Solutions for Health and Development</p><h1>DATA ANALYSIS TOOL</h1><p class="subtitle">Hierarchical Grouping: Main District → Sub-Area</p></div>
+        <div class="roadmap-bar"><div class="roadmap-step active" id="step1"><div class="step-num">1</div><span>Upload</span></div><div class="step-connector" id="conn1"></div><div class="roadmap-step" id="step2"><div class="step-num">2</div><span>Configure</span></div><div class="step-connector" id="conn2"></div><div class="roadmap-step" id="step3"><div class="step-num">3</div><span>Analyze</span></div><div class="step-connector" id="conn3"></div><div class="roadmap-step" id="step4"><div class="step-num">4</div><span>Export</span></div></div>
 
-        <!-- ROADMAP -->
-        <div class="roadmap-bar">
-            <div class="roadmap-step active" id="step1"><div class="step-num">1</div><span>Upload</span></div>
-            <div class="step-connector" id="conn1"></div>
-            <div class="roadmap-step" id="step2"><div class="step-num">2</div><span>Configure</span></div>
-            <div class="step-connector" id="conn2"></div>
-            <div class="roadmap-step" id="step3"><div class="step-num">3</div><span>Analyze</span></div>
-            <div class="step-connector" id="conn3"></div>
-            <div class="roadmap-step" id="step4"><div class="step-num">4</div><span>Export</span></div>
-        </div>
-
-        <!-- STEP 1: UPLOAD -->
-        <div class="content-card" id="uploadSection">
-            <div class="content-inner">
-                <div class="section-header"><span class="section-icon">1</span><span class="section-title">UPLOAD DATA FILE</span></div>
-                <div class="upload-box" id="uploadBox" onclick="document.getElementById('fileInput').click()">
-                    <svg class="icon icon-xl" style="color:#004080;margin-bottom:10px;"><use href="#icon-upload"/></svg>
-                    <h4>Click to Upload Excel or CSV File</h4>
-                    <p>Supported formats: .xlsx, .xls, .csv</p>
-                    <input type="file" id="fileInput" accept=".csv,.xlsx,.xls">
-                    <div class="upload-status" id="uploadStatus"></div>
-                </div>
+        <div class="content-card" id="uploadSection"><div class="content-inner"><div class="section-header"><span class="section-icon">1</span><span class="section-title">UPLOAD DATA FILE</span></div>
+            <div class="upload-box" id="uploadBox" onclick="document.getElementById('fileInput').click()">
+                <svg class="icon icon-xl" style="color:#004080;margin-bottom:10px;"><use href="#icon-upload"/></svg>
+                <h4>Click to Upload Excel or CSV File</h4>
+                <p>Supported formats: .xlsx, .xls, .csv (must have headers in first row)</p>
+                <input type="file" id="fileInput" accept=".csv,.xlsx,.xls">
+                <div class="upload-status" id="uploadStatus"></div>
             </div>
-        </div>
+            <div id="dataPreview" class="data-preview hidden"></div>
+        </div></div>
 
-        <!-- STEP 2: CONFIGURE -->
-        <div class="content-card hidden" id="configSection">
-            <div class="content-inner">
-                <div class="section-header"><span class="section-icon">2</span><span class="section-title">CONFIGURE ANALYSIS</span></div>
+        <div class="content-card hidden" id="configSection"><div class="content-inner"><div class="section-header"><span class="section-icon">2</span><span class="section-title">CONFIGURE HIERARCHICAL GROUPING</span></div>
+            <div class="config-card highlight"><h4>PERIOD COLUMN (yyyy-mm format)</h4><div class="var-chips" id="periodChips"></div></div>
+            <div class="config-card"><h4>YEAR COLUMN (Optional - for alternative grouping)</h4><div class="var-chips" id="yearChips"></div><div style="margin-top:8px;"><button class="btn btn-secondary" style="padding:6px 14px;" onclick="clearYear()">Skip</button></div></div>
+            <div class="config-card highlight"><h4>MAIN GROUP (e.g., District)</h4><div class="var-chips" id="mainGroupChips"></div><div id="mainFilterSection" class="hidden" style="margin-top:15px;"><label style="font-weight:700;">Filter Main Groups:</label><div class="filter-actions"><button class="sel-all" onclick="toggleAllFilters('mainFilter',true)">Select All</button><button class="sel-none" onclick="toggleAllFilters('mainFilter',false)">Clear</button></div><div class="filter-grid" id="mainFilterGrid"></div></div></div>
+            <div class="config-card"><h4>SUB GROUP (Optional, e.g., Chiefdom/Facility)</h4><div class="var-chips" id="subGroupChips"></div><div id="subFilterSection" class="hidden" style="margin-top:15px;"><label style="font-weight:700;">Filter Sub Groups:</label><div class="filter-actions"><button class="sel-all" onclick="toggleAllFilters('subFilter',true)">Select All</button><button class="sel-none" onclick="toggleAllFilters('subFilter',false)">Clear</button></div><div class="filter-grid" id="subFilterGrid"></div></div></div>
+            <div class="config-card"><h4>VALUE COLUMNS (Numeric)</h4><div class="var-chips" id="valueChips"></div></div>
+            <div class="config-card"><h4>AGGREGATION METHOD</h4><div class="agg-options"><div class="agg-option selected" data-agg="sum" onclick="selectAgg(this)">SUM</div><div class="agg-option" data-agg="average" onclick="selectAgg(this)">AVERAGE</div><div class="agg-option" data-agg="count" onclick="selectAgg(this)">COUNT</div></div></div>
+            <div class="button-group"><button class="btn btn-success btn-lg" onclick="runAnalysis()">RUN ANALYSIS</button><button class="btn btn-secondary" onclick="resetConfig()">Reset</button></div>
+        </div></div>
 
-                <!-- Year / Period Column -->
-                <div class="config-card highlight">
-                    <h4><svg class="icon"><use href="#icon-filter"/></svg> YEAR / PERIOD COLUMN</h4>
-                    <p style="font-size:12px;color:#666;margin-bottom:10px;">Select the column that contains year or time period values:</p>
-                    <div class="var-chips" id="yearChips"></div>
-                </div>
-
-                <!-- Month Column (optional) -->
-                <div class="config-card" id="monthConfig">
-                    <h4><svg class="icon"><use href="#icon-filter"/></svg> MONTH COLUMN (Optional)</h4>
-                    <p style="font-size:12px;color:#666;margin-bottom:10px;">Select the column that contains month values (numeric 1-12):</p>
-                    <div class="var-chips" id="monthChips"></div>
-                    <div style="margin-top:8px;"><button class="btn btn-secondary" style="padding:6px 14px;font-size:11px;" onclick="clearMonth()">Skip / Clear</button></div>
-                </div>
-
-                <!-- Row grouping -->
-                <div class="config-card highlight">
-                    <h4><svg class="icon"><use href="#icon-table"/></svg> ROW GROUPING COLUMN</h4>
-                    <p style="font-size:12px;color:#666;margin-bottom:10px;">Select the column to group rows by (e.g., District, Facility, Region):</p>
-                    <div class="var-chips" id="rowChips"></div>
-                    <!-- Filter for row values -->
-                    <div id="rowFilterSection" class="hidden" style="margin-top:15px;">
-                        <label style="font-weight:700;color:#004080;font-size:13px;margin-bottom:8px;display:block;">Filter Row Values:</label>
-                        <div class="filter-actions"><button class="sel-all" onclick="toggleAllFilters('rowFilter',true)">Select All</button><button class="sel-none" onclick="toggleAllFilters('rowFilter',false)">Clear All</button></div>
-                        <div class="filter-grid" id="rowFilterGrid"></div>
-                    </div>
-                </div>
-
-                <!-- Value columns -->
-                <div class="config-card">
-                    <h4><svg class="icon"><use href="#icon-chart"/></svg> VALUE COLUMNS (Numeric)</h4>
-                    <p style="font-size:12px;color:#666;margin-bottom:10px;">Select one or more numeric columns to analyze:</p>
-                    <div class="var-chips" id="valueChips"></div>
-                </div>
-
-                <!-- Aggregation -->
-                <div class="config-card">
-                    <h4><svg class="icon"><use href="#icon-settings"/></svg> AGGREGATION METHOD</h4>
-                    <div class="agg-options">
-                        <div class="agg-option selected" data-agg="sum" onclick="selectAgg(this)">SUM</div>
-                        <div class="agg-option" data-agg="count" onclick="selectAgg(this)">COUNT</div>
-                        <div class="agg-option" data-agg="average" onclick="selectAgg(this)">AVERAGE</div>
-                        <div class="agg-option" data-agg="min" onclick="selectAgg(this)">MIN</div>
-                        <div class="agg-option" data-agg="max" onclick="selectAgg(this)">MAX</div>
-                    </div>
-                </div>
-
-                <div class="button-group">
-                    <button class="btn btn-success btn-lg" onclick="runAnalysis()"><svg class="icon"><use href="#icon-play"/></svg> RUN ANALYSIS</button>
-                    <button class="btn btn-secondary" onclick="resetConfig()"><svg class="icon"><use href="#icon-refresh"/></svg> Reset</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- STEP 3: RESULTS -->
-        <div class="content-card hidden" id="resultsSection">
-            <div class="content-inner">
-                <div class="section-header"><span class="section-icon">3</span><span class="section-title">ANALYSIS RESULTS</span></div>
-
-                <!-- Summary -->
-                <div class="summary-cards" id="summaryCards"></div>
-
-                <!-- Value column selector for charts -->
-                <div id="valueSelectorBar" class="toggle-bar" style="justify-content:center;">
-                    <span style="font-weight:700;color:#004080;font-size:13px;">Active Variable:</span>
-                    <div id="valueToggleButtons"></div>
-                </div>
-
-                <!-- Analysis tabs -->
-                <div class="analysis-tabs">
-                    <div class="analysis-tab active" onclick="switchAnalysisTab('trend')">Annual Trend</div>
-                    <div class="analysis-tab" onclick="switchAnalysisTab('monthly')">Monthly Pattern</div>
-                    <div class="analysis-tab" onclick="switchAnalysisTab('group')">By Group</div>
-                    <div class="analysis-tab" onclick="switchAnalysisTab('groupmonthly')">Group Monthly</div>
-                    <div class="analysis-tab" onclick="switchAnalysisTab('table')">Pivot Table</div>
-                </div>
-
-                <!-- Annual Trend -->
-                <div class="tab-panel active" id="panel-trend">
-                    <div class="chart-section">
-                        <h4>Annual Trend</h4>
-                        <div class="chart-wrapper"><canvas id="annualChart"></canvas></div>
-                    </div>
-                </div>
-
-                <!-- Monthly Pattern -->
-                <div class="tab-panel" id="panel-monthly">
-                    <div class="chart-section">
-                        <h4>Monthly Pattern by Year (Grouped Bars)</h4>
-                        <div class="chart-wrapper-tall"><canvas id="monthlyBarChart"></canvas></div>
-                    </div>
-                    <div class="chart-section">
-                        <h4>Monthly Pattern by Year (Lines)</h4>
-                        <div class="chart-wrapper-tall"><canvas id="monthlyLineChart"></canvas></div>
-                    </div>
-                </div>
-
-                <!-- By Group -->
-                <div class="tab-panel" id="panel-group">
-                    <div class="chart-section">
-                        <h4>Group Trends Over Years</h4>
-                        <div class="chart-wrapper-tall"><canvas id="groupChart"></canvas></div>
-                    </div>
-                </div>
-
-                <!-- Group Monthly -->
-                <div class="tab-panel" id="panel-groupmonthly">
-                    <div class="chart-section">
-                        <h4>Group Monthly Trends</h4>
-                        <p style="color:#666;font-size:12px;margin-bottom:10px;">Select a group to view its sub-items:</p>
-                        <div id="groupSelector" style="margin-bottom:15px;"></div>
-                        <div class="chart-wrapper-tall"><canvas id="groupMonthlyChart"></canvas></div>
-                    </div>
-                </div>
-
-                <!-- Pivot Table -->
-                <div class="tab-panel" id="panel-table">
-                    <div class="toggle-bar">
-                        <div class="toggle-item"><input type="checkbox" id="togRowTotals" checked onchange="renderPivotTable()"><label for="togRowTotals">Row Totals</label></div>
-                        <div class="toggle-item"><input type="checkbox" id="togColTotals" checked onchange="renderPivotTable()"><label for="togColTotals">Column Totals</label></div>
-                        <div class="toggle-item"><input type="checkbox" id="togGrandTotal" checked onchange="renderPivotTable()"><label for="togGrandTotal">Grand Total</label></div>
-                    </div>
-                    <div class="table-wrapper" id="pivotTableWrapper"></div>
-                </div>
-
-                <!-- Export buttons -->
-                <div class="button-group">
-                    <button class="btn btn-success btn-lg" onclick="downloadHTML()"><svg class="icon"><use href="#icon-download"/></svg> Download HTML Report</button>
-                    <button class="btn btn-info btn-lg" onclick="exportExcel()"><svg class="icon"><use href="#icon-download"/></svg> Download Excel</button>
-                    <button class="btn btn-secondary btn-lg" onclick="resetAll()"><svg class="icon"><use href="#icon-refresh"/></svg> Start Over</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- FOOTER -->
-        <div class="page-footer">
-            <p style="margin:0;font-weight:700;">National Malaria Control Programme</p>
-            <p>Ministry of Health, Sierra Leone</p>
-            <p style="font-size:10px;">© 2025 ICF-SL | Data Analysis Tool v1.0</p>
-        </div>
+        <div class="content-card hidden" id="resultsSection"><div class="content-inner"><div class="section-header"><span class="section-icon">3</span><span class="section-title">HIERARCHICAL ANALYSIS RESULTS</span></div>
+            <div class="summary-cards" id="summaryCards"></div><div id="valueSelectorBar" class="toggle-bar" style="justify-content:center;"><span style="font-weight:700;">Active Variable:</span><div id="valueToggleButtons"></div></div>
+            <div class="analysis-tabs"><div class="analysis-tab active" onclick="switchAnalysisTab('trend')">Annual Trend</div><div class="analysis-tab" onclick="switchAnalysisTab('monthly')">Monthly Pattern</div><div class="analysis-tab" onclick="switchAnalysisTab('group')">Main Groups</div><div class="analysis-tab" onclick="switchAnalysisTab('subhierarchy')">Sub-Groups by Main</div><div class="analysis-tab" onclick="switchAnalysisTab('table')">Pivot Table</div></div>
+            
+            <div class="tab-panel active" id="panel-trend"><div class="chart-section"><h4>Annual Trend (Selected Variable)</h4><div class="chart-wrapper"><canvas id="annualChart"></canvas></div></div></div>
+            <div class="tab-panel" id="panel-monthly"><div class="chart-section"><h4>Monthly Pattern (yyyy-mm format)</h4><div class="chart-wrapper-tall"><canvas id="monthlyBarChart"></canvas></div></div></div>
+            <div class="tab-panel" id="panel-group"><div class="chart-section"><h4>Main Groups Trend Over Years</h4><div class="chart-wrapper-tall"><canvas id="groupChart"></canvas></div></div></div>
+            <div class="tab-panel" id="panel-subhierarchy"><div class="chart-section"><h4>Sub-Groups by Main Group</h4><div id="mainGroupTabsContainer" class="main-group-tabs"></div><div id="subGroupDetailPanel"><div class="subgroup-container"><div class="subgroup-title">Select a Main Group to view its sub-areas</div><div id="subGroupChipsContainer" class="subgroup-chips"></div><div class="chart-wrapper-tall"><canvas id="subGroupChart"></canvas></div></div></div></div></div>
+            <div class="tab-panel" id="panel-table"><div class="toggle-bar"><div class="toggle-item"><input type="checkbox" id="togRowTotals" checked onchange="renderPivotTable()"><label>Row Totals</label></div><div class="toggle-item"><input type="checkbox" id="togColTotals" checked onchange="renderPivotTable()"><label>Column Totals</label></div></div><div class="table-wrapper" id="pivotTableWrapper"></div></div>
+            <div class="button-group"><button class="btn btn-success btn-lg" onclick="downloadHTML()">Download HTML Report</button><button class="btn btn-info btn-lg" onclick="exportExcel()">Download Excel</button><button class="btn btn-secondary btn-lg" onclick="resetAll()">Start Over</button></div>
+        </div></div>
+        <div class="page-footer"><p>National Malaria Control Programme | Ministry of Health, Sierra Leone</p><p>© 2025 ICF-SL | Hierarchical Data Analysis</p></div>
     </div>
 
     <script>
-    // ====== GLOBALS ======
-    let rawData = [], allColumns = [], numericCols = [], categoricalCols = [];
-    let fileName = '', currentAgg = 'sum';
-    let selectedYear = '', selectedMonth = '', selectedRow = '', selectedValues = [];
-    let analysisResult = null;
-    let charts = {};
-
-    const COLORS = [
-        '#004080','#e63946','#f77f00','#06a77d','#9d4edd',
-        '#2a9d8f','#e76f51','#264653','#f4a261','#e9c46a',
-        '#b8860b','#8b4513','#4682b4','#32cd32','#ff6347',
-        '#6a5acd','#20b2aa','#ff69b4','#cd853f','#708090'
-    ];
-    function getColor(i) { return COLORS[i % COLORS.length]; }
-
-    const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
-    // ====== LOADING ======
-    function showLoading(t) { document.getElementById('loadingText').textContent = t || 'Processing...'; document.getElementById('loadingOverlay').classList.remove('hidden'); }
-    function hideLoading() { document.getElementById('loadingOverlay').classList.add('hidden'); }
-
-    // ====== ROADMAP ======
-    function updateRoadmap(step) {
-        for (let i = 1; i <= 4; i++) {
-            let s = document.getElementById('step' + i), c = document.getElementById('conn' + (i - 1));
-            s.classList.remove('active', 'completed');
-            if (c) c.classList.remove('completed');
-            if (i < step) { s.classList.add('completed'); s.querySelector('.step-num').innerHTML = '✓'; if (c) c.classList.add('completed'); }
-            else if (i === step) { s.classList.add('active'); s.querySelector('.step-num').textContent = i; }
-            else { s.querySelector('.step-num').textContent = i; }
-        }
-    }
-
-    // ====== FILE HANDLING ======
-    document.getElementById('fileInput').onchange = function(e) { if (e.target.files.length) handleFile(e.target.files[0]); };
-
-    function handleFile(file) {
-        let name = file.name.toLowerCase();
-        fileName = file.name;
-        if (!name.endsWith('.csv') && !name.endsWith('.xlsx') && !name.endsWith('.xls')) { alert('Please upload CSV or Excel file'); return; }
-        showLoading('Reading file...');
-        if (name.endsWith('.csv')) {
-            Papa.parse(file, { header: true, dynamicTyping: true, skipEmptyLines: true, complete: r => processData(r.data, r.meta.fields || []), error: e => { hideLoading(); alert(e.message); } });
-        } else {
-            let reader = new FileReader();
-            reader.onload = e => {
-                try {
-                    let wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
-                    let data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
-                    processData(data, data.length ? Object.keys(data[0]) : []);
-                } catch (err) { hideLoading(); alert(err.message); }
-            };
-            reader.readAsArrayBuffer(file);
-        }
-    }
-
-    function processData(data, cols) {
-        rawData = data; allColumns = cols; numericCols = []; categoricalCols = [];
-        for (let col of cols) {
-            let nc = 0, t = 0;
-            for (let j = 0; j < Math.min(data.length, 100); j++) {
-                let v = data[j][col];
-                if (v !== null && v !== undefined && v !== '') { t++; if (typeof v === 'number' || !isNaN(parseFloat(v))) nc++; }
-            }
-            if (t > 0 && nc / t > 0.5) numericCols.push(col);
-            else categoricalCols.push(col);
-        }
-        document.getElementById('uploadBox').classList.add('loaded');
-        document.getElementById('uploadStatus').className = 'upload-status success';
-        document.getElementById('uploadStatus').textContent = '✓ Loaded: ' + data.length + ' rows × ' + cols.length + ' columns';
-        populateChips();
-        document.getElementById('configSection').classList.remove('hidden');
-        updateRoadmap(2);
-        hideLoading();
-        document.getElementById('configSection').scrollIntoView({ behavior: 'smooth' });
-    }
-
-    // ====== CHIP SELECTORS ======
-    function populateChips() {
-        // Year chips - all columns
-        buildChips('yearChips', allColumns, 'year');
-        // Month chips - all columns
-        buildChips('monthChips', allColumns, 'month');
-        // Row chips - all columns
-        buildChips('rowChips', allColumns, 'row');
-        // Value chips - numeric only (multi-select)
-        buildChips('valueChips', numericCols, 'value');
-    }
-
-    function buildChips(containerId, columns, type) {
-        let container = document.getElementById(containerId);
-        container.innerHTML = '';
-        columns.forEach(col => {
-            let chip = document.createElement('div');
-            chip.className = 'var-chip';
-            chip.textContent = col;
-            chip.dataset.col = col;
-            chip.dataset.type = type;
-            chip.onclick = () => toggleChip(chip, type);
-            container.appendChild(chip);
-        });
-    }
-
-    function toggleChip(chip, type) {
-        if (type === 'value') {
-            // Multi-select
-            chip.classList.toggle('selected');
-            selectedValues = Array.from(document.querySelectorAll('#valueChips .var-chip.selected')).map(c => c.dataset.col);
-        } else {
-            // Single select
-            document.querySelectorAll('#' + type + 'Chips .var-chip').forEach(c => c.classList.remove('selected', 'selected-green'));
-            chip.classList.add('selected-green');
-            if (type === 'year') {
-                selectedYear = chip.dataset.col;
-                // Disable year col from other selectors visually
-                updateChipStates();
-            } else if (type === 'month') {
-                selectedMonth = chip.dataset.col;
-                updateChipStates();
-            } else if (type === 'row') {
-                selectedRow = chip.dataset.col;
-                updateChipStates();
-                showRowFilters();
-            }
-        }
-    }
-
-    function updateChipStates() {
-        // Disable selected year/month/row from value chips
-        document.querySelectorAll('#valueChips .var-chip').forEach(c => {
-            let col = c.dataset.col;
-            if (col === selectedYear || col === selectedMonth || col === selectedRow) {
-                c.classList.add('disabled');
-                c.classList.remove('selected');
-            } else {
-                c.classList.remove('disabled');
-            }
-        });
-        selectedValues = Array.from(document.querySelectorAll('#valueChips .var-chip.selected')).map(c => c.dataset.col);
-    }
-
-    function clearMonth() {
-        selectedMonth = '';
-        document.querySelectorAll('#monthChips .var-chip').forEach(c => c.classList.remove('selected', 'selected-green'));
-    }
-
-    function showRowFilters() {
-        let section = document.getElementById('rowFilterSection');
-        let grid = document.getElementById('rowFilterGrid');
-        if (!selectedRow) { section.classList.add('hidden'); return; }
-        section.classList.remove('hidden');
-        let unique = [...new Set(rawData.map(r => String(r[selectedRow] ?? '')))];
-        if (unique.every(v => v === '' || !isNaN(parseFloat(v)))) unique.sort((a, b) => (parseFloat(a)||0) - (parseFloat(b)||0));
-        else unique.sort();
-        grid.innerHTML = '';
-        unique.forEach((val, idx) => {
-            let div = document.createElement('div');
-            div.className = 'filter-item selected';
-            div.innerHTML = '<input type="checkbox" id="rowF_' + idx + '" value="' + val + '" checked><label for="rowF_' + idx + '">' + (val || '(empty)') + '</label>';
-            div.onclick = function(e) { if (e.target.tagName !== 'INPUT') { let cb = div.querySelector('input'); cb.checked = !cb.checked; } div.classList.toggle('selected', div.querySelector('input').checked); };
-            grid.appendChild(div);
-        });
-    }
-
-    function toggleAllFilters(prefix, state) {
-        document.querySelectorAll('#' + prefix + 'Grid .filter-item').forEach(item => {
-            item.querySelector('input').checked = state;
-            item.classList.toggle('selected', state);
-        });
-    }
-
-    function getRowFilterValues() {
-        let cbs = document.querySelectorAll('#rowFilterGrid input:checked');
-        return cbs.length === 0 ? null : Array.from(cbs).map(cb => cb.value);
-    }
-
-    function selectAgg(el) {
-        document.querySelectorAll('.agg-option').forEach(o => o.classList.remove('selected'));
-        el.classList.add('selected');
-        currentAgg = el.dataset.agg;
-    }
-
-    // ====== ANALYSIS ======
-    function runAnalysis() {
-        if (!selectedYear) { alert('Please select a Year/Period column.'); return; }
-        if (!selectedRow) { alert('Please select a Row Grouping column.'); return; }
-        if (selectedValues.length === 0) { alert('Please select at least one Value column.'); return; }
-
-        showLoading('Running analysis...');
-        updateRoadmap(3);
-
-        setTimeout(() => {
-            try {
-                let rowFilters = getRowFilterValues();
-                let filtered = rawData.filter(row => {
-                    if (rowFilters && !rowFilters.includes(String(row[selectedRow] ?? ''))) return false;
-                    return true;
-                });
-
-                let years = [...new Set(filtered.map(r => r[selectedYear]))].filter(v => v !== '' && v !== null && v !== undefined);
-                if (years.every(v => !isNaN(parseFloat(v)))) years.sort((a, b) => parseFloat(a) - parseFloat(b));
-                else years.sort();
-
-                let groups = [...new Set(filtered.map(r => String(r[selectedRow] ?? '')))].filter(v => v !== '');
-                groups.sort();
-
-                let hasMonth = selectedMonth && filtered.some(r => r[selectedMonth] !== '' && r[selectedMonth] !== null && r[selectedMonth] !== undefined);
-
-                // Build analysis result
-                analysisResult = {
-                    filtered, years, groups, hasMonth,
-                    yearCol: selectedYear, monthCol: selectedMonth, rowCol: selectedRow,
-                    valueCols: selectedValues, agg: currentAgg,
-                    data: {}
-                };
-
-                // For each value column, compute aggregations
-                selectedValues.forEach(valCol => {
-                    let d = { annual: {}, monthly: {}, groupByYear: {}, groupMonthly: {} };
-
-                    // Annual totals
-                    years.forEach(yr => {
-                        let rows = filtered.filter(r => String(r[selectedYear]) === String(yr));
-                        d.annual[yr] = aggregate(rows.map(r => parseFloat(r[valCol]) || 0));
-                    });
-
-                    // Monthly by year
-                    if (hasMonth) {
-                        years.forEach(yr => {
-                            d.monthly[yr] = {};
-                            for (let m = 1; m <= 12; m++) {
-                                let rows = filtered.filter(r => String(r[selectedYear]) === String(yr) && parseInt(r[selectedMonth]) === m);
-                                d.monthly[yr][m] = aggregate(rows.map(r => parseFloat(r[valCol]) || 0));
-                            }
-                        });
+        let rawData=[], allColumns=[], numericCols=[], selectedPeriod='', selectedYear='', selectedMain='', selectedSub='', selectedValues=[], currentAgg='sum';
+        let analysisResult=null, charts={}, activeMainGroupForSub='';
+        
+        function showLoading(t){document.getElementById('loadingText').textContent=t;document.getElementById('loadingOverlay').classList.remove('hidden');}
+        function hideLoading(){document.getElementById('loadingOverlay').classList.add('hidden');}
+        function updateRoadmap(step){for(let i=1;i<=4;i++){let s=document.getElementById('step'+i),c=document.getElementById('conn'+(i-1));s.classList.remove('active','completed');if(c)c.classList.remove('completed');if(i<step){s.classList.add('completed');s.querySelector('.step-num').innerHTML='✓';if(c)c.classList.add('completed');}else if(i===step){s.classList.add('active');s.querySelector('.step-num').textContent=i;}else s.querySelector('.step-num').textContent=i;}}
+        
+        document.getElementById('fileInput').onchange=function(e){if(e.target.files.length)handleFile(e.target.files[0]);};
+        
+        function handleFile(file){
+            let name=file.name.toLowerCase();
+            showLoading('Reading file...');
+            if(name.endsWith('.csv')){
+                Papa.parse(file, {header:true, dynamicTyping:true, skipEmptyLines:true, complete:function(results){
+                    if(results.errors && results.errors.length>0){
+                        console.warn('Parse errors:', results.errors);
                     }
-
-                    // Group by year
-                    groups.forEach(g => {
-                        d.groupByYear[g] = {};
-                        years.forEach(yr => {
-                            let rows = filtered.filter(r => String(r[selectedRow]) === g && String(r[selectedYear]) === String(yr));
-                            d.groupByYear[g][yr] = aggregate(rows.map(r => parseFloat(r[valCol]) || 0));
-                        });
+                    processData(results.data, results.meta.fields || []);
+                }, error:function(err){
+                    hideLoading();
+                    document.getElementById('uploadStatus').innerHTML='❌ Error reading CSV: '+err.message;
+                    document.getElementById('uploadStatus').className='upload-status error';
+                }});
+            } else {
+                let reader=new FileReader();
+                reader.onload=function(e){
+                    try{
+                        let data=new Uint8Array(e.target.result);
+                        let workbook=XLSX.read(data,{type:'array'});
+                        let sheet=workbook.Sheets[workbook.SheetNames[0]];
+                        let jsonData=XLSX.utils.sheet_to_json(sheet,{defval:''});
+                        if(jsonData.length===0){
+                            throw new Error('No data found in Excel file');
+                        }
+                        let headers=Object.keys(jsonData[0]);
+                        processData(jsonData, headers);
+                    }catch(err){
+                        hideLoading();
+                        document.getElementById('uploadStatus').innerHTML='❌ Error reading Excel: '+err.message;
+                        document.getElementById('uploadStatus').className='upload-status error';
+                    }
+                };
+                reader.onerror=function(){
+                    hideLoading();
+                    document.getElementById('uploadStatus').innerHTML='❌ File read error';
+                    document.getElementById('uploadStatus').className='upload-status error';
+                };
+                reader.readAsArrayBuffer(file);
+            }
+        }
+        
+        function processData(data, headers){
+            if(!data || data.length===0){
+                hideLoading();
+                document.getElementById('uploadStatus').innerHTML='❌ No data found in file. Make sure file has headers and data rows.';
+                document.getElementById('uploadStatus').className='upload-status error';
+                return;
+            }
+            
+            rawData=data;
+            allColumns=headers.filter(h=>h && h.trim()!=='');
+            
+            // Show data preview
+            let previewDiv=document.getElementById('dataPreview');
+            previewDiv.classList.remove('hidden');
+            let previewHtml='<strong>📊 Data Preview (first 5 rows):</strong><br><table style="font-size:11px;border-collapse:collapse;">';
+            previewHtml+='<tr>';
+            allColumns.forEach(col=>previewHtml+=`<th style="border:1px solid #ccc;padding:4px;">${col}</th>`);
+            previewHtml+='</tr>';
+            for(let i=0;i<Math.min(5,data.length);i++){
+                previewHtml+='<tr>';
+                allColumns.forEach(col=>{
+                    let val=data[i][col];
+                    let display=(val===null||val===undefined||val==='')?'-':String(val).substring(0,30);
+                    previewHtml+=`<td style="border:1px solid #ccc;padding:4px;">${display}</td>`;
+                });
+                previewHtml+='</tr>';
+            }
+            previewHtml+='</table>';
+            previewDiv.innerHTML=previewHtml;
+            
+            // Identify numeric columns
+            numericCols=[];
+            for(let col of allColumns){
+                let numCount=0, validCount=0;
+                for(let i=0;i<Math.min(data.length,100);i++){
+                    let v=data[i][col];
+                    if(v!==null && v!==undefined && v!==''){
+                        validCount++;
+                        if(typeof v==='number' || (!isNaN(parseFloat(v)) && isFinite(v))){
+                            numCount++;
+                        }
+                    }
+                }
+                if(validCount>0 && (numCount/validCount)>0.6){
+                    numericCols.push(col);
+                }
+            }
+            
+            document.getElementById('uploadBox').classList.add('loaded');
+            document.getElementById('uploadStatus').innerHTML=`✓ Successfully loaded: ${data.length} rows, ${allColumns.length} columns (${numericCols.length} numeric)`;
+            document.getElementById('uploadStatus').className='upload-status success';
+            populateChips();
+            document.getElementById('configSection').classList.remove('hidden');
+            updateRoadmap(2);
+            hideLoading();
+            document.getElementById('configSection').scrollIntoView({behavior:'smooth'});
+        }
+        
+        function populateChips(){
+            buildChips('periodChips',allColumns,'period');
+            buildChips('yearChips',allColumns,'year');
+            buildChips('mainGroupChips',allColumns,'main');
+            buildChips('subGroupChips',allColumns,'sub');
+            buildChips('valueChips',numericCols,'value');
+        }
+        
+        function buildChips(containerId,columns,type){
+            let container=document.getElementById(containerId);
+            if(!container)return;
+            container.innerHTML='';
+            if(!columns || columns.length===0){
+                container.innerHTML='<span style="color:#999;">No columns available</span>';
+                return;
+            }
+            columns.forEach(col=>{
+                let chip=document.createElement('div');
+                chip.className='var-chip';
+                chip.textContent=col;
+                chip.dataset.col=col;
+                chip.onclick=()=>toggleChip(chip,type);
+                container.appendChild(chip);
+            });
+        }
+        
+        function toggleChip(chip,type){
+            if(type==='value'){
+                chip.classList.toggle('selected');
+                selectedValues=Array.from(document.querySelectorAll('#valueChips .var-chip.selected')).map(c=>c.dataset.col);
+            }else{
+                document.querySelectorAll('#'+type+'Chips .var-chip').forEach(c=>c.classList.remove('selected-green'));
+                chip.classList.add('selected-green');
+                if(type==='period')selectedPeriod=chip.dataset.col;
+                if(type==='year')selectedYear=chip.dataset.col;
+                if(type==='main'){
+                    selectedMain=chip.dataset.col;
+                    document.getElementById('mainFilterSection').classList.remove('hidden');
+                    buildFilterGrid('mainFilterGrid',selectedMain,'mainFilter');
+                }
+                if(type==='sub'){
+                    selectedSub=chip.dataset.col;
+                    document.getElementById('subFilterSection').classList.remove('hidden');
+                    buildFilterGrid('subFilterGrid',selectedSub,'subFilter');
+                }
+            }
+        }
+        
+        function buildFilterGrid(containerId,col,filterType){
+            let container=document.getElementById(containerId);
+            if(!container || !col)return;
+            let unique=[...new Set(rawData.map(r=>String(r[col]??'')))].filter(v=>v!=='' && v!=='undefined');
+            unique.sort();
+            container.innerHTML='';
+            if(unique.length===0){
+                container.innerHTML='<span style="color:#999;">No values found</span>';
+                return;
+            }
+            unique.forEach((val,idx)=>{
+                let div=document.createElement('div');
+                div.className='filter-item selected';
+                div.innerHTML='<input type="checkbox" id="'+filterType+'_'+idx+'" value="'+val.replace(/"/g,'&quot;')+'" checked><label>'+val+'</label>';
+                div.onclick=function(e){
+                    if(e.target.tagName!=='INPUT'){
+                        let cb=div.querySelector('input');
+                        cb.checked=!cb.checked;
+                    }
+                    div.classList.toggle('selected',div.querySelector('input').checked);
+                };
+                container.appendChild(div);
+            });
+        }
+        
+        function toggleAllFilters(prefix,state){
+            let container=document.getElementById(prefix+'Grid');
+            if(!container)return;
+            container.querySelectorAll('.filter-item').forEach(item=>{
+                let cb=item.querySelector('input');
+                if(cb){
+                    cb.checked=state;
+                    item.classList.toggle('selected',state);
+                }
+            });
+        }
+        
+        function getFilterValues(prefix){
+            let container=document.getElementById(prefix+'Grid');
+            if(!container)return null;
+            let cbs=container.querySelectorAll('input:checked');
+            return cbs.length===0?null:Array.from(cbs).map(cb=>cb.value);
+        }
+        
+        function clearYear(){selectedYear='';document.querySelectorAll('#yearChips .var-chip').forEach(c=>c.classList.remove('selected-green'));}
+        function selectAgg(el){document.querySelectorAll('.agg-option').forEach(o=>o.classList.remove('selected'));el.classList.add('selected');currentAgg=el.dataset.agg;}
+        function aggregate(vals){if(vals.length===0)return 0;if(currentAgg==='sum')return vals.reduce((a,b)=>a+b,0);if(currentAgg==='count')return vals.length;if(currentAgg==='average')return vals.reduce((a,b)=>a+b,0)/vals.length;return vals.reduce((a,b)=>a+b,0);}
+        function fmtNum(n){if(isNaN(n))return '0';if(currentAgg==='count')return Math.round(n).toLocaleString();if(currentAgg==='average')return n.toLocaleString(undefined,{minimumFractionDigits:1,maxFractionDigits:1});return n.toLocaleString(undefined,{minimumFractionDigits:0,maxFractionDigits:2});}
+        
+        function runAnalysis(){
+            if(!selectedPeriod){alert('Select Period column (yyyy-mm format)');return;}
+            if(!selectedMain){alert('Select Main Group column');return;}
+            if(selectedValues.length===0){alert('Select at least one Value column');return;}
+            
+            showLoading('Analyzing data...');
+            
+            let mainFilter=getFilterValues('mainFilter');
+            let subFilter=getFilterValues('subFilter');
+            
+            let filtered=rawData.filter(row=>{
+                if(mainFilter && !mainFilter.includes(String(row[selectedMain]??'')))return false;
+                if(selectedSub && subFilter && !subFilter.includes(String(row[selectedSub]??'')))return false;
+                return true;
+            });
+            
+            if(filtered.length===0){
+                hideLoading();
+                alert('No data after applying filters. Please adjust filters.');
+                return;
+            }
+            
+            let periods=[...new Set(filtered.map(r=>String(r[selectedPeriod]??'')))].filter(v=>v!=='' && v!=='undefined');
+            periods.sort();
+            
+            let mainGroups=[...new Set(filtered.map(r=>String(r[selectedMain]??'')))].filter(v=>v!=='');
+            mainGroups.sort();
+            
+            let subMap={};
+            if(selectedSub){
+                filtered.forEach(row=>{
+                    let main=String(row[selectedMain]??'');
+                    let sub=String(row[selectedSub]??'');
+                    if(main && sub){
+                        if(!subMap[main])subMap[main]=new Set();
+                        subMap[main].add(sub);
+                    }
+                });
+                for(let m in subMap)subMap[m]=Array.from(subMap[m]).sort();
+            }
+            
+            analysisResult={filtered,periods,mainGroups,subMap,periodCol:selectedPeriod,mainCol:selectedMain,subCol:selectedSub,valueCols:selectedValues,agg:currentAgg,data:{}};
+            
+            selectedValues.forEach(valCol=>{
+                let d={byPeriod:{},mainByPeriod:{},subByMainPeriod:{}};
+                periods.forEach(period=>{
+                    let rows=filtered.filter(r=>String(r[selectedPeriod])===String(period));
+                    d.byPeriod[period]=aggregate(rows.map(r=>parseFloat(r[valCol])||0));
+                });
+                mainGroups.forEach(mg=>{
+                    d.mainByPeriod[mg]={};
+                    periods.forEach(period=>{
+                        let rows=filtered.filter(r=>String(r[selectedMain])===mg && String(r[selectedPeriod])===String(period));
+                        d.mainByPeriod[mg][period]=aggregate(rows.map(r=>parseFloat(r[valCol])||0));
                     });
-
-                    // Group monthly
-                    if (hasMonth) {
-                        groups.forEach(g => {
-                            d.groupMonthly[g] = {};
-                            years.forEach(yr => {
-                                for (let m = 1; m <= 12; m++) {
-                                    let key = yr + '-' + String(m).padStart(2, '0');
-                                    let rows = filtered.filter(r => String(r[selectedRow]) === g && String(r[selectedYear]) === String(yr) && parseInt(r[selectedMonth]) === m);
-                                    d.groupMonthly[g][key] = aggregate(rows.map(r => parseFloat(r[valCol]) || 0));
-                                }
+                });
+                if(selectedSub){
+                    Object.keys(subMap).forEach(mg=>{
+                        d.subByMainPeriod[mg]={};
+                        subMap[mg].forEach(sub=>{
+                            d.subByMainPeriod[mg][sub]={};
+                            periods.forEach(period=>{
+                                let rows=filtered.filter(r=>String(r[selectedMain])===mg && String(r[selectedSub])===sub && String(r[selectedPeriod])===String(period));
+                                d.subByMainPeriod[mg][sub][period]=aggregate(rows.map(r=>parseFloat(r[valCol])||0));
                             });
                         });
-                    }
-
-                    analysisResult.data[valCol] = d;
-                });
-
-                renderResults();
-                document.getElementById('resultsSection').classList.remove('hidden');
-                hideLoading();
-                document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
-            } catch (err) {
-                hideLoading();
-                alert('Error: ' + err.message);
-                console.error(err);
-            }
-        }, 100);
-    }
-
-    function aggregate(values) {
-        if (values.length === 0) return 0;
-        switch (currentAgg) {
-            case 'sum': return values.reduce((a, b) => a + b, 0);
-            case 'count': return values.length;
-            case 'average': return values.reduce((a, b) => a + b, 0) / values.length;
-            case 'min': return Math.min(...values);
-            case 'max': return Math.max(...values);
-            default: return values.reduce((a, b) => a + b, 0);
-        }
-    }
-
-    function fmtNum(n) {
-        if (n === 0) return '0';
-        if (currentAgg === 'count') return Math.round(n).toLocaleString();
-        if (currentAgg === 'average') return n.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-        return n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
-    }
-
-    // ====== RENDER ======
-    let activeValueCol = '';
-
-    function renderResults() {
-        activeValueCol = selectedValues[0];
-
-        // Summary cards
-        let totalRecords = analysisResult.filtered.length;
-        let totalYears = analysisResult.years.length;
-        let totalGroups = analysisResult.groups.length;
-        let d = analysisResult.data[activeValueCol];
-        let grandTotal = Object.values(d.annual).reduce((a, b) => a + b, 0);
-
-        document.getElementById('summaryCards').innerHTML =
-            '<div class="summary-card"><div class="value">' + totalRecords.toLocaleString() + '</div><div class="label">Records</div></div>' +
-            '<div class="summary-card"><div class="value">' + totalYears + '</div><div class="label">Years/Periods</div></div>' +
-            '<div class="summary-card"><div class="value">' + totalGroups + '</div><div class="label">Groups</div></div>' +
-            '<div class="summary-card"><div class="value">' + fmtNum(grandTotal) + '</div><div class="label">Grand Total (' + activeValueCol + ')</div></div>';
-
-        // Value toggle buttons
-        let btnContainer = document.getElementById('valueToggleButtons');
-        btnContainer.innerHTML = '';
-        selectedValues.forEach((v, i) => {
-            let btn = document.createElement('button');
-            btn.className = 'btn ' + (i === 0 ? 'btn-primary' : 'btn-secondary');
-            btn.textContent = v;
-            btn.style.padding = '8px 16px'; btn.style.fontSize = '12px';
-            btn.onclick = () => switchActiveValue(v);
-            btnContainer.appendChild(btn);
-        });
-
-        if (selectedValues.length <= 1) document.getElementById('valueSelectorBar').classList.add('hidden');
-        else document.getElementById('valueSelectorBar').classList.remove('hidden');
-
-        // Show/hide monthly tabs
-        if (!analysisResult.hasMonth) {
-            document.querySelectorAll('.analysis-tab')[1].style.display = 'none';
-            document.querySelectorAll('.analysis-tab')[3].style.display = 'none';
-        } else {
-            document.querySelectorAll('.analysis-tab')[1].style.display = '';
-            document.querySelectorAll('.analysis-tab')[3].style.display = '';
-        }
-
-        // Group selector
-        buildGroupSelector();
-
-        // Draw charts
-        drawAllCharts();
-        renderPivotTable();
-    }
-
-    function switchActiveValue(valCol) {
-        activeValueCol = valCol;
-        document.querySelectorAll('#valueToggleButtons .btn').forEach(b => {
-            b.className = 'btn ' + (b.textContent === valCol ? 'btn-primary' : 'btn-secondary');
-            b.style.padding = '8px 16px'; b.style.fontSize = '12px';
-        });
-        // Update summary grand total
-        let d = analysisResult.data[activeValueCol];
-        let grandTotal = Object.values(d.annual).reduce((a, b) => a + b, 0);
-        document.querySelectorAll('.summary-card')[3].innerHTML = '<div class="value">' + fmtNum(grandTotal) + '</div><div class="label">Grand Total (' + activeValueCol + ')</div>';
-
-        drawAllCharts();
-        renderPivotTable();
-    }
-
-    function switchAnalysisTab(tab) {
-        document.querySelectorAll('.analysis-tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-        event.target.classList.add('active');
-        document.getElementById('panel-' + tab).classList.add('active');
-
-        // Redraw charts in case of resize
-        setTimeout(() => drawAllCharts(), 50);
-    }
-
-    function destroyChart(key) { if (charts[key]) { charts[key].destroy(); charts[key] = null; } }
-
-    function drawAllCharts() {
-        let r = analysisResult, d = r.data[activeValueCol];
-
-        // Annual trend
-        destroyChart('annual');
-        let ctx1 = document.getElementById('annualChart').getContext('2d');
-        charts.annual = new Chart(ctx1, {
-            type: 'line',
-            data: {
-                labels: r.years.map(String),
-                datasets: [{
-                    label: activeValueCol + ' (' + currentAgg + ')',
-                    data: r.years.map(yr => d.annual[yr] || 0),
-                    borderColor: '#004080', backgroundColor: 'rgba(0,64,128,0.1)',
-                    borderWidth: 3, tension: 0.4, fill: true, pointRadius: 5, pointHoverRadius: 7
-                }]
-            },
-            options: chartOpts('Year', 'Value')
-        });
-
-        // Monthly bar
-        if (r.hasMonth) {
-            destroyChart('monthlyBar');
-            let ctx2 = document.getElementById('monthlyBarChart').getContext('2d');
-            charts.monthlyBar = new Chart(ctx2, {
-                type: 'bar',
-                data: {
-                    labels: MONTH_NAMES,
-                    datasets: r.years.map((yr, i) => ({
-                        label: String(yr),
-                        data: Array.from({length:12}, (_, m) => d.monthly[yr]?.[m+1] || 0),
-                        backgroundColor: getColor(i), borderColor: getColor(i), borderWidth: 1
-                    }))
-                },
-                options: chartOpts('Month', 'Value')
-            });
-
-            // Monthly line
-            destroyChart('monthlyLine');
-            let ctx3 = document.getElementById('monthlyLineChart').getContext('2d');
-            charts.monthlyLine = new Chart(ctx3, {
-                type: 'line',
-                data: {
-                    labels: MONTH_NAMES,
-                    datasets: r.years.map((yr, i) => ({
-                        label: String(yr),
-                        data: Array.from({length:12}, (_, m) => d.monthly[yr]?.[m+1] || 0),
-                        borderColor: getColor(i), borderWidth: 3, tension: 0.4, pointRadius: 5, fill: false
-                    }))
-                },
-                options: chartOpts('Month', 'Value')
-            });
-        }
-
-        // Group chart
-        destroyChart('group');
-        let ctx4 = document.getElementById('groupChart').getContext('2d');
-        charts.group = new Chart(ctx4, {
-            type: 'line',
-            data: {
-                labels: r.years.map(String),
-                datasets: r.groups.map((g, i) => ({
-                    label: g,
-                    data: r.years.map(yr => d.groupByYear[g]?.[yr] || 0),
-                    borderColor: getColor(i), borderWidth: 2, tension: 0.4, pointRadius: 4
-                }))
-            },
-            options: chartOpts('Year', 'Value')
-        });
-
-        // Group monthly (first group)
-        if (r.hasMonth && r.groups.length > 0) {
-            let activeGroup = document.querySelector('#groupSelector .group-btn.active');
-            let groupName = activeGroup ? activeGroup.textContent : r.groups[0];
-            drawGroupMonthlyChart(groupName);
-        }
-    }
-
-    function chartOpts(xLabel, yLabel) {
-        return {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: true, position: 'top' } },
-            scales: {
-                y: { beginAtZero: true, title: { display: true, text: yLabel, font: { size: 14, weight: 'bold' } } },
-                x: { title: { display: true, text: xLabel, font: { size: 14, weight: 'bold' } } }
-            }
-        };
-    }
-
-    function buildGroupSelector() {
-        let container = document.getElementById('groupSelector');
-        container.innerHTML = '';
-        analysisResult.groups.forEach((g, i) => {
-            let btn = document.createElement('button');
-            btn.className = 'group-btn' + (i === 0 ? ' active' : '');
-            btn.textContent = g;
-            btn.onclick = () => {
-                container.querySelectorAll('.group-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                drawGroupMonthlyChart(g);
-            };
-            container.appendChild(btn);
-        });
-    }
-
-    function drawGroupMonthlyChart(groupName) {
-        let r = analysisResult, d = r.data[activeValueCol];
-        if (!r.hasMonth) return;
-
-        let labels = [];
-        r.years.forEach(yr => { for (let m = 1; m <= 12; m++) labels.push(yr + '-' + String(m).padStart(2, '0')); });
-
-        // Get sub-items for this group? Actually we show the group itself over year-months
-        // Since groupMonthly is per group, show this group's trend
-        destroyChart('groupMonthly');
-        let ctx = document.getElementById('groupMonthlyChart').getContext('2d');
-
-        // If there's hierarchy, show just this group's year-month data
-        let dataset = [{
-            label: groupName,
-            data: labels.map(key => d.groupMonthly[groupName]?.[key] || 0),
-            borderColor: '#004080', borderWidth: 2, tension: 0.4, pointRadius: 2, fill: false
-        }];
-
-        charts.groupMonthly = new Chart(ctx, {
-            type: 'line',
-            data: { labels, datasets: dataset },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { display: true, position: 'top' },
-                    title: { display: true, text: groupName + ' - Monthly ' + activeValueCol + ' Trend', font: { size: 16, weight: 'bold' }, color: '#004080' }
-                },
-                scales: {
-                    y: { beginAtZero: true, title: { display: true, text: 'Value', font: { size: 14, weight: 'bold' } } },
-                    x: { ticks: { maxRotation: 90, minRotation: 45, font: { size: 9 }, callback: function(value, index) { return index % 6 === 0 ? this.getLabelForValue(value) : ''; } } }
-                }
-            }
-        });
-    }
-
-    // ====== PIVOT TABLE ======
-    function renderPivotTable() {
-        if (!analysisResult) return;
-        let r = analysisResult, d = r.data[activeValueCol];
-        let sRT = document.getElementById('togRowTotals').checked;
-        let sCT = document.getElementById('togColTotals').checked;
-        let sGT = document.getElementById('togGrandTotal').checked;
-
-        let html = '<table class="data-table"><thead><tr>';
-        html += '<th style="text-align:left;position:sticky;left:0;z-index:15;background:#003366;">' + r.rowCol + '</th>';
-        r.years.forEach(yr => html += '<th>' + yr + '</th>');
-        if (sRT) html += '<th style="background:#1a6b1a;">Row Total</th>';
-        html += '</tr></thead><tbody>';
-
-        let colTotals = {};
-        r.years.forEach(yr => colTotals[yr] = 0);
-        let grandSum = 0;
-
-        r.groups.forEach(g => {
-            html += '<tr><td class="row-label">' + g + '</td>';
-            let rowTotal = 0;
-            r.years.forEach(yr => {
-                let val = d.groupByYear[g]?.[yr] || 0;
-                html += '<td>' + fmtNum(val) + '</td>';
-                rowTotal += val;
-                colTotals[yr] += val;
-            });
-            if (sRT) html += '<td class="total-cell">' + fmtNum(rowTotal) + '</td>';
-            grandSum += rowTotal;
-            html += '</tr>';
-        });
-
-        if (sCT) {
-            html += '<tr><td class="row-label" style="background:#dce8f5;">Column Total</td>';
-            r.years.forEach(yr => html += '<td class="total-cell">' + fmtNum(colTotals[yr]) + '</td>');
-            if (sRT && sGT) html += '<td style="background:#004080;color:#fff;font-weight:700;">' + fmtNum(grandSum) + '</td>';
-            else if (sRT) html += '<td class="total-cell"></td>';
-            html += '</tr>';
-        }
-
-        html += '</tbody></table>';
-        document.getElementById('pivotTableWrapper').innerHTML = html;
-    }
-
-    // ====== EXPORT HTML ======
-    function downloadHTML() {
-        updateRoadmap(4);
-        showLoading('Generating HTML report...');
-
-        setTimeout(() => {
-            try {
-                let r = analysisResult, d = r.data[activeValueCol];
-                let aggLabel = { sum: 'Sum', count: 'Count', average: 'Average', min: 'Min', max: 'Max' }[currentAgg];
-
-                // Build pivot table HTML
-                let pivotHTML = '<table style="width:100%;border-collapse:collapse;font-size:13px;font-family:Oswald,Arial,sans-serif;">';
-                pivotHTML += '<thead><tr><th style="background:#004080;color:#fff;padding:12px;border:1px solid #ccc;text-align:left;">' + r.rowCol + '</th>';
-                r.years.forEach(yr => pivotHTML += '<th style="background:#004080;color:#fff;padding:12px;border:1px solid #ccc;text-align:center;">' + yr + '</th>');
-                pivotHTML += '<th style="background:#1a6b1a;color:#fff;padding:12px;border:1px solid #ccc;text-align:center;">Row Total</th></tr></thead><tbody>';
-
-                let colTotals = {}; r.years.forEach(yr => colTotals[yr] = 0); let grandSum = 0;
-                r.groups.forEach((g, gi) => {
-                    let bg = gi % 2 === 0 ? '#fff' : '#f8f9fa';
-                    pivotHTML += '<tr><td style="background:#e7f3ff;font-weight:700;color:#004080;padding:10px;border:1px solid #ccc;">' + g + '</td>';
-                    let rowTotal = 0;
-                    r.years.forEach(yr => {
-                        let val = d.groupByYear[g]?.[yr] || 0;
-                        pivotHTML += '<td style="text-align:right;padding:10px;border:1px solid #ccc;background:' + bg + ';">' + fmtNum(val) + '</td>';
-                        rowTotal += val; colTotals[yr] += val;
                     });
-                    pivotHTML += '<td style="text-align:right;padding:10px;border:1px solid #ccc;background:#dce8f5;font-weight:700;color:#004080;">' + fmtNum(rowTotal) + '</td></tr>';
-                    grandSum += rowTotal;
-                });
-                pivotHTML += '<tr><td style="background:#dce8f5;font-weight:700;color:#004080;padding:10px;border:1px solid #ccc;">Column Total</td>';
-                r.years.forEach(yr => pivotHTML += '<td style="text-align:right;padding:10px;border:1px solid #ccc;background:#dce8f5;font-weight:700;color:#004080;">' + fmtNum(colTotals[yr]) + '</td>');
-                pivotHTML += '<td style="text-align:right;padding:10px;border:1px solid #ccc;background:#004080;color:#fff;font-weight:700;">' + fmtNum(grandSum) + '</td></tr>';
-                pivotHTML += '</tbody></table>';
-
-                // Build annual data for Chart.js
-                let annualLabels = r.years.map(String);
-                let annualData = r.years.map(yr => d.annual[yr] || 0);
-
-                // Monthly data
-                let monthlyDatasets = '';
-                if (r.hasMonth) {
-                    monthlyDatasets = r.years.map((yr, i) => {
-                        let mdata = Array.from({length:12}, (_, m) => d.monthly[yr]?.[m+1] || 0);
-                        return `{label:'${yr}',data:[${mdata.join(',')}],borderColor:'${getColor(i)}',borderWidth:3,tension:0.4,pointRadius:5,fill:false}`;
-                    }).join(',');
                 }
-
-                // Group data
-                let groupDatasets = r.groups.map((g, i) => {
-                    let gdata = r.years.map(yr => d.groupByYear[g]?.[yr] || 0);
-                    return `{label:'${g.replace(/'/g,"\\'")}',data:[${gdata.join(',')}],borderColor:'${getColor(i)}',borderWidth:2,tension:0.4,pointRadius:4}`;
-                }).join(',');
-
-                let reportHTML = `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ICF-SL Data Analysis Report - ${activeValueCol}</title>
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"><\/script>
-<style>
-*{margin:0;padding:0;box-sizing:border-box;}
-body{margin:0;padding:20px;background:#fff;font-family:'Oswald',Arial,sans-serif;color:#000;font-weight:500;}
-.container{max-width:1400px;margin:0 auto;}
-.header{background:#004080;color:#fff;padding:30px;text-align:center;border-radius:8px 8px 0 0;}
-.header h1{font-size:24px;font-weight:700;letter-spacing:1px;margin-bottom:5px;}
-.header p{font-size:14px;font-weight:500;}
-.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin:20px 0;}
-.scard{background:#f8f9fa;border:3px solid #004080;border-radius:8px;padding:20px;text-align:center;}
-.scard .val{font-size:28px;font-weight:700;color:#004080;}
-.scard .lbl{font-size:11px;color:#666;margin-top:5px;font-weight:600;}
-.section{border:4px double #004080;border-radius:12px;padding:25px;margin:20px 0;background:#fff;}
-.section h3{color:#004080;font-size:18px;margin-bottom:15px;border-bottom:3px solid #004080;padding-bottom:8px;}
-.chart-box{position:relative;height:400px;margin-bottom:10px;}
-.chart-box-tall{position:relative;height:500px;margin-bottom:10px;}
-.tbl-wrap{overflow:auto;border:2px solid #004080;border-radius:8px;margin:10px 0;}
-.footer{background:#004080;color:#fff;padding:20px;text-align:center;border-radius:0 0 8px 8px;font-size:12px;margin-top:20px;}
-@media(max-width:900px){.summary{grid-template-columns:1fr;}}
-</style>
-</head>
-<body>
-<div class="container">
-<div class="header">
-<h1>ICF-SL DATA ANALYSIS REPORT</h1>
-<p>${activeValueCol} | ${aggLabel} | ${r.rowCol} by ${r.yearCol}${r.hasMonth ? ' & ' + r.monthCol : ''}</p>
-<p style="font-size:11px;margin-top:8px;">Generated: ${new Date().toLocaleDateString()}</p>
-</div>
-
-<div class="summary">
-<div class="scard"><div class="val">${r.filtered.length.toLocaleString()}</div><div class="lbl">Records</div></div>
-<div class="scard"><div class="val">${r.years.length}</div><div class="lbl">Years/Periods</div></div>
-<div class="scard"><div class="val">${r.groups.length}</div><div class="lbl">Groups</div></div>
-<div class="scard"><div class="val">${fmtNum(grandSum)}</div><div class="lbl">Grand Total</div></div>
-</div>
-
-<div class="section">
-<h3>Annual Trend</h3>
-<div class="chart-box"><canvas id="c1"></canvas></div>
-</div>
-
-${r.hasMonth ? `
-<div class="section">
-<h3>Monthly Pattern by Year</h3>
-<div class="chart-box-tall"><canvas id="c2"></canvas></div>
-</div>
-` : ''}
-
-<div class="section">
-<h3>Group Trends Over Years</h3>
-<div class="chart-box-tall"><canvas id="c3"></canvas></div>
-</div>
-
-<div class="section">
-<h3>Pivot Table: ${r.rowCol} × ${r.yearCol} (${aggLabel} of ${activeValueCol})</h3>
-<div class="tbl-wrap">${pivotHTML}</div>
-</div>
-
-<div class="footer">
-<p style="font-weight:700;">Informatics Consultancy Firm-Sierra Leone (ICF-SL)</p>
-<p>National Malaria Control Programme | Ministry of Health, Sierra Leone</p>
-<p>© 2025 ICF-SL | Data Analysis Tool</p>
-</div>
-</div>
-
-<script>
-const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-const opts = (xl,yl) => ({responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'top'}},scales:{y:{beginAtZero:true,title:{display:true,text:yl,font:{size:14,weight:'bold'}}},x:{title:{display:true,text:xl,font:{size:14,weight:'bold'}}}}});
-
-new Chart(document.getElementById('c1'),{type:'line',data:{labels:${JSON.stringify(annualLabels)},datasets:[{label:'${activeValueCol}',data:[${annualData.join(',')}],borderColor:'#004080',backgroundColor:'rgba(0,64,128,0.1)',borderWidth:3,tension:0.4,fill:true,pointRadius:5}]},options:opts('Year','Value')});
-
-${r.hasMonth ? `new Chart(document.getElementById('c2'),{type:'line',data:{labels:MONTHS,datasets:[${monthlyDatasets}]},options:opts('Month','Value')});` : ''}
-
-new Chart(document.getElementById('c3'),{type:'line',data:{labels:${JSON.stringify(annualLabels)},datasets:[${groupDatasets}]},options:opts('Year','Value')});
-<\/script>
-</body>
-</html>`;
-
-                let blob = new Blob([reportHTML], { type: 'text/html;charset=utf-8;' });
-                let a = document.createElement('a');
-                a.href = URL.createObjectURL(blob);
-                a.download = fileName.replace(/\.[^/.]+$/, '') + '_Analysis_Report_' + new Date().toISOString().split('T')[0] + '.html';
-                a.click();
-
-                hideLoading();
-            } catch (err) {
-                hideLoading();
-                alert('Export error: ' + err.message);
-                console.error(err);
-            }
-        }, 200);
-    }
-
-    // ====== EXPORT EXCEL ======
-    function exportExcel() {
-        updateRoadmap(4);
-        let r = analysisResult, d = r.data[activeValueCol];
-
-        // Build data array
-        let data = [];
-        let header = [r.rowCol]; r.years.forEach(yr => header.push(String(yr))); header.push('Row Total');
-        data.push(header);
-
-        r.groups.forEach(g => {
-            let row = [g];
-            let rowTotal = 0;
-            r.years.forEach(yr => {
-                let val = d.groupByYear[g]?.[yr] || 0;
-                row.push(val);
-                rowTotal += val;
+                analysisResult.data[valCol]=d;
             });
-            row.push(rowTotal);
-            data.push(row);
-        });
-
-        // Column totals
-        let tr = ['Column Total'];
-        let grandSum = 0;
-        r.years.forEach(yr => {
-            let colSum = r.groups.reduce((acc, g) => acc + (d.groupByYear[g]?.[yr] || 0), 0);
-            tr.push(colSum); grandSum += colSum;
-        });
-        tr.push(grandSum);
-        data.push(tr);
-
-        let wb = XLSX.utils.book_new();
-        let ws = XLSX.utils.aoa_to_sheet(data);
-        XLSX.utils.book_append_sheet(wb, ws, 'Analysis');
-        XLSX.writeFile(wb, fileName.replace(/\.[^/.]+$/, '') + '_Analysis_' + new Date().toISOString().split('T')[0] + '.xlsx');
-    }
-
-    // ====== RESET ======
-    function resetConfig() {
-        selectedYear = ''; selectedMonth = ''; selectedRow = ''; selectedValues = [];
-        document.querySelectorAll('.var-chip').forEach(c => c.classList.remove('selected', 'selected-green', 'disabled'));
-        document.querySelectorAll('.agg-option').forEach(o => o.classList.remove('selected'));
-        document.querySelector('.agg-option[data-agg="sum"]').classList.add('selected');
-        currentAgg = 'sum';
-        document.getElementById('rowFilterSection').classList.add('hidden');
-    }
-
-    function resetAll() {
-        resetConfig();
-        rawData = []; allColumns = []; numericCols = []; categoricalCols = [];
-        analysisResult = null;
-        Object.keys(charts).forEach(k => destroyChart(k));
-        document.getElementById('uploadBox').classList.remove('loaded');
-        document.getElementById('uploadStatus').textContent = '';
-        document.getElementById('uploadStatus').className = 'upload-status';
-        document.getElementById('fileInput').value = '';
-        document.getElementById('configSection').classList.add('hidden');
-        document.getElementById('resultsSection').classList.add('hidden');
-        updateRoadmap(1);
-    }
+            
+            renderResults();
+            document.getElementById('resultsSection').classList.remove('hidden');
+            hideLoading();
+            updateRoadmap(3);
+            document.getElementById('resultsSection').scrollIntoView({behavior:'smooth'});
+        }
+        
+        let activeValueCol='';
+        function renderResults(){
+            activeValueCol=selectedValues[0];
+            let d=analysisResult.data[activeValueCol];
+            let grandTotal=Object.values(d.byPeriod).reduce((a,b)=>a+b,0);
+            document.getElementById('summaryCards').innerHTML=`<div class="summary-card"><div class="value">${analysisResult.filtered.length.toLocaleString()}</div><div class="label">Records</div></div><div class="summary-card"><div class="value">${analysisResult.periods.length}</div><div class="label">Periods</div></div><div class="summary-card"><div class="value">${analysisResult.mainGroups.length}</div><div class="label">Main Groups</div></div><div class="summary-card"><div class="value">${fmtNum(grandTotal)}</div><div class="label">Grand Total</div></div>`;
+            
+            let btnContainer=document.getElementById('valueToggleButtons');
+            btnContainer.innerHTML='';
+            selectedValues.forEach((v,i)=>{
+                let btn=document.createElement('button');
+                btn.className='btn '+(i===0?'btn-primary':'btn-secondary');
+                btn.textContent=v;
+                btn.onclick=()=>switchActiveValue(v);
+                btnContainer.appendChild(btn);
+            });
+            if(selectedValues.length<=1)document.getElementById('valueSelectorBar').classList.add('hidden');
+            else document.getElementById('valueSelectorBar').classList.remove('hidden');
+            document.querySelectorAll('.analysis-tab')[1].style.display='none';
+            drawAllCharts();
+            renderPivotTable();
+            buildMainGroupTabs();
+        }
+        
+        function switchActiveValue(v){
+            activeValueCol=v;
+            document.querySelectorAll('#valueToggleButtons .btn').forEach(b=>{
+                b.className='btn '+(b.textContent===v?'btn-primary':'btn-secondary');
+            });
+            let d=analysisResult.data[activeValueCol];
+            let grandTotal=Object.values(d.byPeriod).reduce((a,b)=>a+b,0);
+            document.querySelectorAll('.summary-card')[3].innerHTML=`<div class="value">${fmtNum(grandTotal)}</div><div class="label">Grand Total</div>`;
+            drawAllCharts();
+            renderPivotTable();
+            buildMainGroupTabs();
+        }
+        
+        function switchAnalysisTab(tab){
+            document.querySelectorAll('.analysis-tab').forEach(t=>t.classList.remove('active'));
+            document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('panel-'+tab).classList.add('active');
+            setTimeout(()=>drawAllCharts(),50);
+        }
+        
+        function destroyChart(key){if(charts[key]){charts[key].destroy();charts[key]=null;}}
+        
+        function drawAllCharts(){
+            if(!analysisResult)return;
+            let r=analysisResult,d=r.data[activeValueCol];
+            destroyChart('annual');
+            let annualCtx=document.getElementById('annualChart');
+            if(annualCtx){
+                charts.annual=new Chart(annualCtx,{type:'line',data:{labels:r.years.map(String),datasets:[{label:activeValueCol+' ('+currentAgg+')',data:r.years.map(yr=>d.annual[yr]||0),borderColor:'#004080',backgroundColor:'rgba(0,64,128,0.1)',borderWidth:3,tension:0.4,fill:true}]},options:{responsive:true,maintainAspectRatio:false}});
+            }
+            if(r.hasMonth){
+                destroyChart('monthlyBar');
+                let monthlyCtx=document.getElementById('monthlyBarChart');
+                if(monthlyCtx){
+                    let allMonthLabels=[];
+                    let monthlyDataByYearMonth={};
+                    r.years.forEach(yr=>{
+                        for(let m=1;m<=12;m++){
+                            let label=String(yr)+'-'+String(m).padStart(2,'0');
+                            allMonthLabels.push(label);
+                            monthlyDataByYearMonth[label]=d.monthly[yr]?.[m]||0;
+                        }
+                    });
+                    let datasets=[{label:activeValueCol+' ('+currentAgg+')',data:allMonthLabels.map(lbl=>monthlyDataByYearMonth[lbl]),backgroundColor:'rgba(0,64,128,0.6)',borderColor:'#004080',borderWidth:2}];
+                    charts.monthlyBar=new Chart(monthlyCtx,{type:'bar',data:{labels:allMonthLabels,datasets:datasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true}}}});
+                }
+            }
+            destroyChart('group');
+            let groupCtx=document.getElementById('groupChart');
+            if(groupCtx){
+                charts.group=new Chart(groupCtx,{type:'line',data:{labels:r.years.map(String),datasets:r.mainGroups.map((g,i)=>({label:g,data:r.years.map(yr=>d.mainByYear[g]?.[yr]||0),borderColor:`hsl(${i*40},70%,50%)`,tension:0.4}))},options:{responsive:true,maintainAspectRatio:false}});
+            }
+        }
+        
+        function buildMainGroupTabs(){
+            let container=document.getElementById('mainGroupTabsContainer');
+            if(!analysisResult.subMap || Object.keys(analysisResult.subMap).length===0){
+                if(container)container.innerHTML='<p style="color:#666;">No sub-group column selected. Select Sub Group in config.</p>';
+                return;
+            }
+            container.innerHTML='';
+            analysisResult.mainGroups.forEach(mg=>{
+                let btn=document.createElement('button');
+                btn.className='main-group-btn'+(activeMainGroupForSub===mg||(!activeMainGroupForSub&&mg===analysisResult.mainGroups[0])?' active':'');
+                btn.textContent=mg;
+                btn.onclick=()=>{
+                    document.querySelectorAll('.main-group-btn').forEach(b=>b.classList.remove('active'));
+                    btn.classList.add('active');
+                    activeMainGroupForSub=mg;
+                    renderSubGroupPanel(mg);
+                };
+                container.appendChild(btn);
+            });
+            if(!activeMainGroupForSub && analysisResult.mainGroups.length)activeMainGroupForSub=analysisResult.mainGroups[0];
+            renderSubGroupPanel(activeMainGroupForSub);
+        }
+        
+        function renderSubGroupPanel(mainGroup){
+            let subs=analysisResult.subMap[mainGroup]||[];
+            let subContainer=document.getElementById('subGroupChipsContainer');
+            subContainer.innerHTML='';
+            if(subs.length===0){
+                subContainer.innerHTML='<span>No sub-groups found</span>';
+                return;
+            }
+            let activeSub=subs[0];
+            subs.forEach(sub=>{
+                let chip=document.createElement('div');
+                chip.className='subgroup-chip'+(activeSub===sub?' active':'');
+                chip.textContent=sub;
+                chip.onclick=()=>{
+                    subContainer.querySelectorAll('.subgroup-chip').forEach(c=>c.classList.remove('active'));
+                    chip.classList.add('active');
+                    drawSubGroupChart(mainGroup,sub);
+                };
+                subContainer.appendChild(chip);
+            });
+            drawSubGroupChart(mainGroup,activeSub);
+        }
+        
+        function drawSubGroupChart(mainGroup,subGroup){
+            let r=analysisResult,d=r.data[activeValueCol];
+            if(!d.subByMainYear[mainGroup] || !d.subByMainYear[mainGroup][subGroup])return;
+            destroyChart('subGroup');
+            let years=r.years.map(yr=>d.subByMainYear[mainGroup][subGroup][yr]||0);
+            let ctx=document.getElementById('subGroupChart');
+            if(ctx){
+                charts.subGroup=new Chart(ctx,{type:'line',data:{labels:r.years.map(String),datasets:[{label:`${subGroup} (${activeValueCol})`,data:years,borderColor:'#004080',borderWidth:3,fill:false,tension:0.4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{title:{display:true,text:`${mainGroup} → ${subGroup} Trend`}}}});
+            }
+        }
+        
+        function renderPivotTable(){
+            if(!analysisResult)return;
+            let r=analysisResult,d=r.data[activeValueCol];
+            let html='<table class="data-table"><thead><tr><th style="text-align:left;">'+r.mainCol+'</th>'+r.years.map(yr=>`<th>${yr}</th>`).join('')+'<th style="background:#1a6b1a;">Row Total</th></tr></thead><tbody>';
+            let colTotals={};r.years.forEach(yr=>colTotals[yr]=0);
+            let grandSum=0;
+            r.mainGroups.forEach(g=>{
+                let rowTotal=0;
+                html+=`<tr><td class="row-label">${g}</td>`;
+                r.years.forEach(yr=>{
+                    let val=d.mainByYear[g]?.[yr]||0;
+                    html+=`<td>${fmtNum(val)}</td>`;
+                    rowTotal+=val;
+                    colTotals[yr]+=val;
+                });
+                html+=`<td class="total-cell">${fmtNum(rowTotal)}</td></tr>`;
+                grandSum+=rowTotal;
+            });
+            if(document.getElementById('togColTotals').checked){
+                html+=`<tr><td class="row-label" style="background:#dce8f5;">Column Total</td>${r.years.map(yr=>`<td class="total-cell">${fmtNum(colTotals[yr])}</td>`).join('')}<td class="total-cell">${fmtNum(grandSum)}</td></tr>`;
+            }
+            html+='</tbody></table>';
+            document.getElementById('pivotTableWrapper').innerHTML=html;
+        }
+        
+        function downloadHTML(){
+            if(!analysisResult){alert('No analysis results. Run analysis first.');return;}
+            let progressContainer=showProgressBar('Generating HTML report...');
+            setTimeout(()=>{
+                updateProgressBar(progressContainer, 25);
+                let r=analysisResult;
+                let d=r.data[activeValueCol];
+                let html='<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>ICF-SL Analysis Report</title><style>body{font-family:Arial,sans-serif;margin:20px;background:#f5f5f5;}h1,h2{color:#004080;}.header{background:#004080;color:#fff;padding:20px;border-radius:8px;margin-bottom:20px;}.section{background:#fff;padding:20px;margin:15px 0;border-radius:8px;border-left:5px solid #004080;box-shadow:0 2px 8px rgba(0,0,0,0.1);}.summary-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin:20px 0;}.stat-box{background:#e7f3ff;padding:15px;border-radius:8px;border:2px solid #004080;text-align:center;}.stat-value{font-size:24px;font-weight:bold;color:#004080;}.stat-label{font-size:12px;color:#666;margin-top:5px;}table{width:100%;border-collapse:collapse;margin:15px 0;}th,td{padding:10px;text-align:left;border:1px solid #ddd;}th{background:#004080;color:#fff;font-weight:bold;}tr:nth-child(even){background:#f8f9fa;}.footer{text-align:center;margin-top:40px;font-size:12px;color:#666;border-top:2px solid #004080;padding-top:20px;}</style></head><body>';
+                
+                updateProgressBar(progressContainer, 40);
+                
+                html+='<div class="header"><h1>ICF-SL Hierarchical Data Analysis Report</h1><p><strong>Generated:</strong> '+new Date().toLocaleString()+'</p><p><strong>Active Variable:</strong> '+activeValueCol+'</p><p><strong>Aggregation Method:</strong> '+currentAgg.toUpperCase()+'</p></div>';
+                
+                let grandTotal=Object.values(d.annual).reduce((a,b)=>a+b,0);
+                html+='<div class="section"><h2>Summary Statistics</h2><div class="summary-stats"><div class="stat-box"><div class="stat-value">'+r.filtered.length.toLocaleString()+'</div><div class="stat-label">Records</div></div><div class="stat-box"><div class="stat-value">'+r.years.length+'</div><div class="stat-label">Years</div></div><div class="stat-box"><div class="stat-value">'+r.mainGroups.length+'</div><div class="stat-label">Main Groups</div></div><div class="stat-box"><div class="stat-value">'+fmtNum(grandTotal)+'</div><div class="stat-label">Grand Total</div></div></div></div>';
+                
+                updateProgressBar(progressContainer, 55);
+                
+                html+='<div class="section"><h2>Annual Trend Data</h2><table><tr><th>Year</th><th>'+activeValueCol+'</th></tr>';
+                r.years.forEach(yr=>{html+='<tr><td>'+yr+'</td><td>'+fmtNum(d.annual[yr]||0)+'</td></tr>';});
+                html+='</table></div>';
+                
+                updateProgressBar(progressContainer, 70);
+                
+                html+='<div class="section"><h2>Main Groups Summary</h2><table><tr><th>'+r.mainCol+'</th>';
+                r.years.forEach(yr=>{html+='<th>'+yr+'</th>';});
+                html+='<th>Total</th></tr>';
+                r.mainGroups.forEach(g=>{
+                    let rowTotal=0;
+                    html+='<tr><td><strong>'+g+'</strong></td>';
+                    r.years.forEach(yr=>{
+                        let val=d.mainByYear[g]?.[yr]||0;
+                        html+='<td>'+fmtNum(val)+'</td>';
+                        rowTotal+=val;
+                    });
+                    html+='<td><strong>'+fmtNum(rowTotal)+'</strong></td></tr>';
+                });
+                html+='</table></div>';
+                
+                updateProgressBar(progressContainer, 85);
+                
+                html+='<div class="footer"><p>National Malaria Control Programme | Ministry of Health, Sierra Leone</p><p>© 2025 ICF-SL | Hierarchical Data Analysis</p><p>Report generated on '+new Date().toLocaleString()+'</p></div></body></html>';
+                
+                updateProgressBar(progressContainer, 95);
+                
+                let blob=new Blob([html],{type:'text/html'});
+                let url=URL.createObjectURL(blob);
+                let a=document.createElement('a');
+                a.href=url;
+                a.download='ICF-SL_Analysis_Report_'+new Date().getTime()+'.html';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                updateProgressBar(progressContainer, 100);
+                setTimeout(()=>hideProgressBar(progressContainer), 500);
+            }, 100);
+        }
+        
+        function exportExcel(){
+            if(!analysisResult){alert('No analysis results. Run analysis first.');return;}
+            let progressContainer=showProgressBar('Generating Excel file...');
+            setTimeout(()=>{
+                updateProgressBar(progressContainer, 20);
+                let r=analysisResult;
+                let d=r.data[activeValueCol];
+                let wb=XLSX.utils.book_new();
+                
+                updateProgressBar(progressContainer, 35);
+                
+                let summaryData=[
+                    ['ICF-SL Hierarchical Data Analysis Report'],
+                    ['Generated',new Date().toLocaleString()],
+                    ['Active Variable',activeValueCol],
+                    ['Aggregation Method',currentAgg.toUpperCase()],
+                    [],
+                    ['Summary Statistics'],
+                    ['Total Records',r.filtered.length],
+                    ['Years',r.years.length],
+                    ['Main Groups',r.mainGroups.length],
+                    ['Grand Total',Object.values(d.annual).reduce((a,b)=>a+b,0)]
+                ];
+                let ws1=XLSX.utils.aoa_to_sheet(summaryData);
+                XLSX.utils.book_append_sheet(wb,ws1,'Summary');
+                
+                updateProgressBar(progressContainer, 50);
+                
+                let annualData=[['Year',activeValueCol]];
+                r.years.forEach(yr=>{annualData.push([yr,d.annual[yr]||0]);});
+                let ws2=XLSX.utils.aoa_to_sheet(annualData);
+                XLSX.utils.book_append_sheet(wb,ws2,'Annual Trend');
+                
+                updateProgressBar(progressContainer, 65);
+                
+                let mainGroupsData=[[r.mainCol,...r.years.map(String),'Total']];
+                r.mainGroups.forEach(g=>{
+                    let row=[g];
+                    let rowTotal=0;
+                    r.years.forEach(yr=>{
+                        let val=d.mainByYear[g]?.[yr]||0;
+                        row.push(val);
+                        rowTotal+=val;
+                    });
+                    row.push(rowTotal);
+                    mainGroupsData.push(row);
+                });
+                let colTotals=[' Column Totals'];
+                r.years.forEach(yr=>{
+                    let sum=r.mainGroups.reduce((acc,g)=>acc+(d.mainByYear[g]?.[yr]||0),0);
+                    colTotals.push(sum);
+                });
+                let grandSum=r.mainGroups.reduce((acc,g)=>acc+Object.values(d.mainByYear[g]).reduce((a,b)=>a+b,0),0);
+                colTotals.push(grandSum);
+                mainGroupsData.push(colTotals);
+                let ws3=XLSX.utils.aoa_to_sheet(mainGroupsData);
+                XLSX.utils.book_append_sheet(wb,ws3,'Main Groups');
+                
+                updateProgressBar(progressContainer, 80);
+                
+                if(r.hasMonth){
+                    let monthlyData=[['Date',activeValueCol]];
+                    r.years.forEach(yr=>{
+                        for(let m=1;m<=12;m++){
+                            let label=String(yr)+'-'+String(m).padStart(2,'0');
+                            monthlyData.push([label,d.monthly[yr]?.[m]||0]);
+                        }
+                    });
+                    let ws4=XLSX.utils.aoa_to_sheet(monthlyData);
+                    XLSX.utils.book_append_sheet(wb,ws4,'Monthly');
+                }
+                
+                updateProgressBar(progressContainer, 90);
+                
+                XLSX.writeFile(wb,'ICF-SL_Analysis_'+new Date().getTime()+'.xlsx');
+                
+                updateProgressBar(progressContainer, 100);
+                setTimeout(()=>hideProgressBar(progressContainer), 500);
+            }, 100);
+        }
+        
+        function showProgressBar(label){
+            let container=document.createElement('div');
+            container.style.cssText='position:fixed;bottom:30px;right:30px;background:white;border:3px solid #004080;border-radius:8px;padding:20px;width:300px;box-shadow:0 4px 12px rgba(0,0,0,0.2);z-index:9998;';
+            container.innerHTML='<div style="font-weight:700;color:#004080;margin-bottom:10px;font-size:14px;">'+label+'</div><div style="background:#e0e0e0;height:30px;border-radius:6px;overflow:hidden;border:2px solid #004080;"><div class="progress-fill" style="width:0%;height:100%;background:#004080;transition:width 0.3s ease;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:12px;">0%</div></div>';
+            document.body.appendChild(container);
+            return container;
+        }
+        
+        function updateProgressBar(container,percent){
+            let fill=container.querySelector('.progress-fill');
+            if(fill){
+                fill.style.width=percent+'%';
+                fill.textContent=percent+'%';
+            }
+        }
+        
+        function hideProgressBar(container){
+            if(container && container.parentNode){
+                container.parentNode.removeChild(container);
+            }
+        }
+        function resetConfig(){
+            selectedYear='';selectedMonth='';selectedMain='';selectedSub='';selectedValues=[];currentAgg='sum';
+            document.querySelectorAll('.var-chip').forEach(c=>c.classList.remove('selected','selected-green','selected-green'));
+            document.getElementById('mainFilterSection').classList.add('hidden');
+            document.getElementById('subFilterSection').classList.add('hidden');
+        }
+        function resetAll(){
+            resetConfig();
+            rawData=[];analysisResult=null;
+            document.getElementById('uploadBox').classList.remove('loaded');
+            document.getElementById('uploadStatus').innerHTML='';
+            document.getElementById('uploadStatus').className='upload-status';
+            document.getElementById('fileInput').value='';
+            document.getElementById('configSection').classList.add('hidden');
+            document.getElementById('resultsSection').classList.add('hidden');
+            document.getElementById('dataPreview').classList.add('hidden');
+            updateRoadmap(1);
+        }
     </script>
 </body>
 </html>
