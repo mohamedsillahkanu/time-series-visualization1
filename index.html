@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ICF-SL Data Analysis Tool | Hierarchical Grouping</title>
+    <title>ICF-SL Data Analysis Tool</title>
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -214,12 +214,39 @@
             <div class="tab-panel" id="panel-group"><div class="chart-section"><h4>Main Groups Trend Over Years</h4><div class="chart-wrapper-tall"><canvas id="groupChart"></canvas></div></div></div>
             <div class="tab-panel" id="panel-subhierarchy"><div class="chart-section"><h4>Sub-Groups by Main Group</h4><div id="mainGroupTabsContainer" class="main-group-tabs"></div><div id="subGroupDetailPanel"><div class="subgroup-container"><div class="subgroup-title">Select a Main Group to view its sub-areas</div><div id="subGroupChipsContainer" class="subgroup-chips"></div><div class="chart-wrapper-tall"><canvas id="subGroupChart"></canvas></div></div></div></div></div>
             <div class="tab-panel" id="panel-table"><div class="toggle-bar"><div class="toggle-item"><input type="checkbox" id="togRowTotals" checked onchange="renderPivotTable()"><label>Row Totals</label></div><div class="toggle-item"><input type="checkbox" id="togColTotals" checked onchange="renderPivotTable()"><label>Column Totals</label></div></div><div class="table-wrapper" id="pivotTableWrapper"></div></div>
-            <div class="button-group"><button class="btn btn-success btn-lg" onclick="downloadHTML()">Download HTML Report</button><button class="btn btn-info btn-lg" onclick="exportExcel()">Download Excel</button><button class="btn btn-secondary btn-lg" onclick="resetAll()">Start Over</button></div>
+            <div class="button-group"><button class="btn btn-success btn-lg" onclick="downloadInteractiveReport()">📊 Download Interactive Report</button><button class="btn btn-info btn-lg" onclick="exportExcel()">Download Excel</button><button class="btn btn-secondary btn-lg" onclick="resetAll()">Start Over</button></div>
         </div></div>
         <div class="page-footer"><p>National Malaria Control Programme | Ministry of Health, Sierra Leone</p><p>© 2025 ICF-SL | Hierarchical Data Analysis</p></div>
     </div>
 
     <script>
+        // Excel date conversion helper (converts 42005 to "2015-01")
+        function excelDateToYyyyMm(serial) {
+            if (typeof serial !== 'number') return String(serial).trim();
+            const epoch = new Date(Date.UTC(1899, 11, 31));
+            const date = new Date(epoch.getTime() + serial * 86400000);
+            const year = date.getUTCFullYear();
+            const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+            return `${year}-${month}`;
+        }
+        
+        function formatPeriodValue(value) {
+            if (value === null || value === undefined || value === '') return '';
+            let str = String(value).trim();
+            if (typeof value === 'number' && value > 40000 && value < 50000) {
+                return excelDateToYyyyMm(value);
+            }
+            if (/^\d{4}-\d{1,2}$/.test(str)) {
+                let parts = str.split('-');
+                return `${parts[0]}-${String(parts[1]).padStart(2, '0')}`;
+            }
+            let d = new Date(str);
+            if (!isNaN(d.getTime())) {
+                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            }
+            return str;
+        }
+
         let rawData=[], allColumns=[], numericCols=[], selectedPeriod='', selectedYear='', selectedMain='', selectedSub='', selectedValues=[], currentAgg='sum';
         let analysisResult=null, charts={}, activeMainGroupForSub='';
         
@@ -233,16 +260,7 @@
             let name=file.name.toLowerCase();
             showLoading('Reading file...');
             if(name.endsWith('.csv')){
-                Papa.parse(file, {header:true, dynamicTyping:true, skipEmptyLines:true, complete:function(results){
-                    if(results.errors && results.errors.length>0){
-                        console.warn('Parse errors:', results.errors);
-                    }
-                    processData(results.data, results.meta.fields || []);
-                }, error:function(err){
-                    hideLoading();
-                    document.getElementById('uploadStatus').innerHTML='❌ Error reading CSV: '+err.message;
-                    document.getElementById('uploadStatus').className='upload-status error';
-                }});
+                Papa.parse(file, {header:true, dynamicTyping:true, skipEmptyLines:true, complete:function(results){ processData(results.data, results.meta.fields || []); }, error:function(err){ hideLoading(); document.getElementById('uploadStatus').innerHTML='❌ Error reading CSV: '+err.message; document.getElementById('uploadStatus').className='upload-status error'; }});
             } else {
                 let reader=new FileReader();
                 reader.onload=function(e){
@@ -251,9 +269,7 @@
                         let workbook=XLSX.read(data,{type:'array'});
                         let sheet=workbook.Sheets[workbook.SheetNames[0]];
                         let jsonData=XLSX.utils.sheet_to_json(sheet,{defval:''});
-                        if(jsonData.length===0){
-                            throw new Error('No data found in Excel file');
-                        }
+                        if(jsonData.length===0){ throw new Error('No data found in Excel file'); }
                         let headers=Object.keys(jsonData[0]);
                         processData(jsonData, headers);
                     }catch(err){
@@ -279,20 +295,27 @@
                 return;
             }
             
-            rawData=data;
+            rawData=data.map(row=>{
+                let newRow={...row};
+                for(let col of headers){
+                    if(newRow[col] && typeof newRow[col]==='number' && newRow[col]>40000 && newRow[col]<50000){
+                        newRow[col]=excelDateToYyyyMm(newRow[col]);
+                    }
+                }
+                return newRow;
+            });
             allColumns=headers.filter(h=>h && h.trim()!=='');
             
-            // Show data preview
             let previewDiv=document.getElementById('dataPreview');
             previewDiv.classList.remove('hidden');
             let previewHtml='<strong>📊 Data Preview (first 5 rows):</strong><br><table style="font-size:11px;border-collapse:collapse;">';
-            previewHtml+='<tr>';
+            previewHtml+='</tr>';
             allColumns.forEach(col=>previewHtml+=`<th style="border:1px solid #ccc;padding:4px;">${col}</th>`);
             previewHtml+='</tr>';
-            for(let i=0;i<Math.min(5,data.length);i++){
+            for(let i=0;i<Math.min(5,rawData.length);i++){
                 previewHtml+='<tr>';
                 allColumns.forEach(col=>{
-                    let val=data[i][col];
+                    let val=rawData[i][col];
                     let display=(val===null||val===undefined||val==='')?'-':String(val).substring(0,30);
                     previewHtml+=`<td style="border:1px solid #ccc;padding:4px;">${display}</td>`;
                 });
@@ -301,12 +324,11 @@
             previewHtml+='</table>';
             previewDiv.innerHTML=previewHtml;
             
-            // Identify numeric columns
             numericCols=[];
             for(let col of allColumns){
                 let numCount=0, validCount=0;
-                for(let i=0;i<Math.min(data.length,100);i++){
-                    let v=data[i][col];
+                for(let i=0;i<Math.min(rawData.length,100);i++){
+                    let v=rawData[i][col];
                     if(v!==null && v!==undefined && v!==''){
                         validCount++;
                         if(typeof v==='number' || (!isNaN(parseFloat(v)) && isFinite(v))){
@@ -320,7 +342,7 @@
             }
             
             document.getElementById('uploadBox').classList.add('loaded');
-            document.getElementById('uploadStatus').innerHTML=`✓ Successfully loaded: ${data.length} rows, ${allColumns.length} columns (${numericCols.length} numeric)`;
+            document.getElementById('uploadStatus').innerHTML=`✓ Successfully loaded: ${rawData.length} rows, ${allColumns.length} columns (${numericCols.length} numeric)`;
             document.getElementById('uploadStatus').className='upload-status success';
             populateChips();
             document.getElementById('configSection').classList.remove('hidden');
@@ -448,7 +470,7 @@
                 return;
             }
             
-            let periods=[...new Set(filtered.map(r=>String(r[selectedPeriod]??'')))].filter(v=>v!=='' && v!=='undefined');
+            let periods=[...new Set(filtered.map(r=>formatPeriodValue(r[selectedPeriod])))].filter(v=>v!=='' && v!=='undefined');
             periods.sort();
             
             let mainGroups=[...new Set(filtered.map(r=>String(r[selectedMain]??'')))].filter(v=>v!=='');
@@ -472,13 +494,13 @@
             selectedValues.forEach(valCol=>{
                 let d={byPeriod:{},mainByPeriod:{},subByMainPeriod:{}};
                 periods.forEach(period=>{
-                    let rows=filtered.filter(r=>String(r[selectedPeriod])===String(period));
+                    let rows=filtered.filter(r=>formatPeriodValue(r[selectedPeriod])===String(period));
                     d.byPeriod[period]=aggregate(rows.map(r=>parseFloat(r[valCol])||0));
                 });
                 mainGroups.forEach(mg=>{
                     d.mainByPeriod[mg]={};
                     periods.forEach(period=>{
-                        let rows=filtered.filter(r=>String(r[selectedMain])===mg && String(r[selectedPeriod])===String(period));
+                        let rows=filtered.filter(r=>String(r[selectedMain])===mg && formatPeriodValue(r[selectedPeriod])===String(period));
                         d.mainByPeriod[mg][period]=aggregate(rows.map(r=>parseFloat(r[valCol])||0));
                     });
                 });
@@ -488,7 +510,7 @@
                         subMap[mg].forEach(sub=>{
                             d.subByMainPeriod[mg][sub]={};
                             periods.forEach(period=>{
-                                let rows=filtered.filter(r=>String(r[selectedMain])===mg && String(r[selectedSub])===sub && String(r[selectedPeriod])===String(period));
+                                let rows=filtered.filter(r=>String(r[selectedMain])===mg && String(r[selectedSub])===sub && formatPeriodValue(r[selectedPeriod])===String(period));
                                 d.subByMainPeriod[mg][sub][period]=aggregate(rows.map(r=>parseFloat(r[valCol])||0));
                             });
                         });
@@ -522,7 +544,10 @@
             });
             if(selectedValues.length<=1)document.getElementById('valueSelectorBar').classList.add('hidden');
             else document.getElementById('valueSelectorBar').classList.remove('hidden');
+            
+            // Monthly pattern not implemented in this version - hide the tab
             document.querySelectorAll('.analysis-tab')[1].style.display='none';
+            
             drawAllCharts();
             renderPivotTable();
             buildMainGroupTabs();
@@ -533,9 +558,6 @@
             document.querySelectorAll('#valueToggleButtons .btn').forEach(b=>{
                 b.className='btn '+(b.textContent===v?'btn-primary':'btn-secondary');
             });
-            let d=analysisResult.data[activeValueCol];
-            let grandTotal=Object.values(d.byPeriod).reduce((a,b)=>a+b,0);
-            document.querySelectorAll('.summary-card')[3].innerHTML=`<div class="value">${fmtNum(grandTotal)}</div><div class="label">Grand Total</div>`;
             drawAllCharts();
             renderPivotTable();
             buildMainGroupTabs();
@@ -557,29 +579,12 @@
             destroyChart('annual');
             let annualCtx=document.getElementById('annualChart');
             if(annualCtx){
-                charts.annual=new Chart(annualCtx,{type:'line',data:{labels:r.years.map(String),datasets:[{label:activeValueCol+' ('+currentAgg+')',data:r.years.map(yr=>d.annual[yr]||0),borderColor:'#004080',backgroundColor:'rgba(0,64,128,0.1)',borderWidth:3,tension:0.4,fill:true}]},options:{responsive:true,maintainAspectRatio:false}});
-            }
-            if(r.hasMonth){
-                destroyChart('monthlyBar');
-                let monthlyCtx=document.getElementById('monthlyBarChart');
-                if(monthlyCtx){
-                    let allMonthLabels=[];
-                    let monthlyDataByYearMonth={};
-                    r.years.forEach(yr=>{
-                        for(let m=1;m<=12;m++){
-                            let label=String(yr)+'-'+String(m).padStart(2,'0');
-                            allMonthLabels.push(label);
-                            monthlyDataByYearMonth[label]=d.monthly[yr]?.[m]||0;
-                        }
-                    });
-                    let datasets=[{label:activeValueCol+' ('+currentAgg+')',data:allMonthLabels.map(lbl=>monthlyDataByYearMonth[lbl]),backgroundColor:'rgba(0,64,128,0.6)',borderColor:'#004080',borderWidth:2}];
-                    charts.monthlyBar=new Chart(monthlyCtx,{type:'bar',data:{labels:allMonthLabels,datasets:datasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true}}}});
-                }
+                charts.annual=new Chart(annualCtx,{type:'line',data:{labels:r.periods,datasets:[{label:activeValueCol+' ('+currentAgg+')',data:r.periods.map(p=>d.byPeriod[p]||0),borderColor:'#004080',backgroundColor:'rgba(0,64,128,0.1)',borderWidth:3,tension:0.4,fill:true}]},options:{responsive:true,maintainAspectRatio:false}});
             }
             destroyChart('group');
             let groupCtx=document.getElementById('groupChart');
             if(groupCtx){
-                charts.group=new Chart(groupCtx,{type:'line',data:{labels:r.years.map(String),datasets:r.mainGroups.map((g,i)=>({label:g,data:r.years.map(yr=>d.mainByYear[g]?.[yr]||0),borderColor:`hsl(${i*40},70%,50%)`,tension:0.4}))},options:{responsive:true,maintainAspectRatio:false}});
+                charts.group=new Chart(groupCtx,{type:'line',data:{labels:r.periods,datasets:r.mainGroups.map((g,i)=>({label:g,data:r.periods.map(p=>d.mainByPeriod[g]?.[p]||0),borderColor:`hsl(${i*40},70%,50%)`,tension:0.4}))},options:{responsive:true,maintainAspectRatio:false}});
             }
         }
         
@@ -631,205 +636,116 @@
         
         function drawSubGroupChart(mainGroup,subGroup){
             let r=analysisResult,d=r.data[activeValueCol];
-            if(!d.subByMainYear[mainGroup] || !d.subByMainYear[mainGroup][subGroup])return;
+            if(!d.subByMainPeriod[mainGroup] || !d.subByMainPeriod[mainGroup][subGroup])return;
             destroyChart('subGroup');
-            let years=r.years.map(yr=>d.subByMainYear[mainGroup][subGroup][yr]||0);
             let ctx=document.getElementById('subGroupChart');
             if(ctx){
-                charts.subGroup=new Chart(ctx,{type:'line',data:{labels:r.years.map(String),datasets:[{label:`${subGroup} (${activeValueCol})`,data:years,borderColor:'#004080',borderWidth:3,fill:false,tension:0.4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{title:{display:true,text:`${mainGroup} → ${subGroup} Trend`}}}});
+                charts.subGroup=new Chart(ctx,{type:'line',data:{labels:r.periods,datasets:[{label:`${subGroup} (${activeValueCol})`,data:r.periods.map(p=>d.subByMainPeriod[mainGroup][subGroup][p]||0),borderColor:'#004080',borderWidth:3,fill:false,tension:0.4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{title:{display:true,text:`${mainGroup} → ${subGroup} Trend`}}}});
             }
         }
         
         function renderPivotTable(){
             if(!analysisResult)return;
             let r=analysisResult,d=r.data[activeValueCol];
-            let html='<table class="data-table"><thead><tr><th style="text-align:left;">'+r.mainCol+'</th>'+r.years.map(yr=>`<th>${yr}</th>`).join('')+'<th style="background:#1a6b1a;">Row Total</th></tr></thead><tbody>';
-            let colTotals={};r.years.forEach(yr=>colTotals[yr]=0);
+            let html='<table class="data-table"><thead><tr><th style="text-align:left;">'+r.mainCol+'</th>'+r.periods.map(p=>`<th>${p}</th>`).join('')+'<th style="background:#1a6b1a;">Row Total</th></tr></thead><tbody>';
+            let colTotals={};r.periods.forEach(p=>colTotals[p]=0);
             let grandSum=0;
             r.mainGroups.forEach(g=>{
                 let rowTotal=0;
                 html+=`<tr><td class="row-label">${g}</td>`;
-                r.years.forEach(yr=>{
-                    let val=d.mainByYear[g]?.[yr]||0;
+                r.periods.forEach(p=>{
+                    let val=d.mainByPeriod[g]?.[p]||0;
                     html+=`<td>${fmtNum(val)}</td>`;
                     rowTotal+=val;
-                    colTotals[yr]+=val;
+                    colTotals[p]+=val;
                 });
                 html+=`<td class="total-cell">${fmtNum(rowTotal)}</td></tr>`;
                 grandSum+=rowTotal;
             });
             if(document.getElementById('togColTotals').checked){
-                html+=`<tr><td class="row-label" style="background:#dce8f5;">Column Total</td>${r.years.map(yr=>`<td class="total-cell">${fmtNum(colTotals[yr])}</td>`).join('')}<td class="total-cell">${fmtNum(grandSum)}</td></tr>`;
+                html+=`<tr><td class="row-label" style="background:#dce8f5;">Column Total</td>${r.periods.map(p=>`<td class="total-cell">${fmtNum(colTotals[p])}</td>`).join('')}<td class="total-cell">${fmtNum(grandSum)}</td></tr>`;
             }
             html+='</tbody></table>';
             document.getElementById('pivotTableWrapper').innerHTML=html;
         }
         
-        function downloadHTML(){
+        function downloadInteractiveReport(){
             if(!analysisResult){alert('No analysis results. Run analysis first.');return;}
-            let progressContainer=showProgressBar('Generating HTML report...');
-            setTimeout(()=>{
-                updateProgressBar(progressContainer, 25);
-                let r=analysisResult;
-                let d=r.data[activeValueCol];
-                let html='<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>ICF-SL Analysis Report</title><style>body{font-family:Arial,sans-serif;margin:20px;background:#f5f5f5;}h1,h2{color:#004080;}.header{background:#004080;color:#fff;padding:20px;border-radius:8px;margin-bottom:20px;}.section{background:#fff;padding:20px;margin:15px 0;border-radius:8px;border-left:5px solid #004080;box-shadow:0 2px 8px rgba(0,0,0,0.1);}.summary-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin:20px 0;}.stat-box{background:#e7f3ff;padding:15px;border-radius:8px;border:2px solid #004080;text-align:center;}.stat-value{font-size:24px;font-weight:bold;color:#004080;}.stat-label{font-size:12px;color:#666;margin-top:5px;}table{width:100%;border-collapse:collapse;margin:15px 0;}th,td{padding:10px;text-align:left;border:1px solid #ddd;}th{background:#004080;color:#fff;font-weight:bold;}tr:nth-child(even){background:#f8f9fa;}.footer{text-align:center;margin-top:40px;font-size:12px;color:#666;border-top:2px solid #004080;padding-top:20px;}</style></head><body>';
-                
-                updateProgressBar(progressContainer, 40);
-                
-                html+='<div class="header"><h1>ICF-SL Hierarchical Data Analysis Report</h1><p><strong>Generated:</strong> '+new Date().toLocaleString()+'</p><p><strong>Active Variable:</strong> '+activeValueCol+'</p><p><strong>Aggregation Method:</strong> '+currentAgg.toUpperCase()+'</p></div>';
-                
-                let grandTotal=Object.values(d.annual).reduce((a,b)=>a+b,0);
-                html+='<div class="section"><h2>Summary Statistics</h2><div class="summary-stats"><div class="stat-box"><div class="stat-value">'+r.filtered.length.toLocaleString()+'</div><div class="stat-label">Records</div></div><div class="stat-box"><div class="stat-value">'+r.years.length+'</div><div class="stat-label">Years</div></div><div class="stat-box"><div class="stat-value">'+r.mainGroups.length+'</div><div class="stat-label">Main Groups</div></div><div class="stat-box"><div class="stat-value">'+fmtNum(grandTotal)+'</div><div class="stat-label">Grand Total</div></div></div></div>';
-                
-                updateProgressBar(progressContainer, 55);
-                
-                html+='<div class="section"><h2>Annual Trend Data</h2><table><tr><th>Year</th><th>'+activeValueCol+'</th></tr>';
-                r.years.forEach(yr=>{html+='<tr><td>'+yr+'</td><td>'+fmtNum(d.annual[yr]||0)+'</td></tr>';});
-                html+='</table></div>';
-                
-                updateProgressBar(progressContainer, 70);
-                
-                html+='<div class="section"><h2>Main Groups Summary</h2><table><tr><th>'+r.mainCol+'</th>';
-                r.years.forEach(yr=>{html+='<th>'+yr+'</th>';});
-                html+='<th>Total</th></tr>';
-                r.mainGroups.forEach(g=>{
-                    let rowTotal=0;
-                    html+='<tr><td><strong>'+g+'</strong></td>';
-                    r.years.forEach(yr=>{
-                        let val=d.mainByYear[g]?.[yr]||0;
-                        html+='<td>'+fmtNum(val)+'</td>';
-                        rowTotal+=val;
-                    });
-                    html+='<td><strong>'+fmtNum(rowTotal)+'</strong></td></tr>';
+            let r=analysisResult;
+            let d=r.data[activeValueCol];
+            let reportHTML=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>ICF-SL Interactive Report</title><script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"><\/script><style>body{font-family:Oswald,Arial,sans-serif;margin:20px;background:#f5f5f5;}h1,h2{color:#004080;}.header{background:#004080;color:#fff;padding:20px;border-radius:8px;margin-bottom:20px;}.section{background:#fff;padding:20px;margin:15px 0;border-radius:8px;border-left:5px solid #004080;box-shadow:0 2px 8px rgba(0,0,0,0.1);}.summary-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin:20px 0;}.stat-box{background:#e7f3ff;padding:15px;border-radius:8px;border:2px solid #004080;text-align:center;}.stat-value{font-size:24px;font-weight:bold;color:#004080;}.stat-label{font-size:12px;color:#666;margin-top:5px;}table{width:100%;border-collapse:collapse;margin:15px 0;}th,td{padding:10px;text-align:left;border:1px solid #ddd;}th{background:#004080;color:#fff;font-weight:bold;}tr:nth-child(even){background:#f8f9fa;}.chart-container{height:400px;margin:20px 0;}.footer{text-align:center;margin-top:40px;font-size:12px;color:#666;border-top:2px solid #004080;padding-top:20px;}</style></head><body><div class="header"><h1>ICF-SL Hierarchical Analysis Report</h1><p><strong>Generated:</strong> ${new Date().toLocaleString()}</p><p><strong>Active Variable:</strong> ${activeValueCol}</p><p><strong>Aggregation Method:</strong> ${currentAgg.toUpperCase()}</p></div>`;
+            let grandTotal=Object.values(d.byPeriod).reduce((a,b)=>a+b,0);
+            reportHTML+=`<div class="section"><h2>Summary Statistics</h2><div class="summary-stats"><div class="stat-box"><div class="stat-value">${r.filtered.length.toLocaleString()}</div><div class="stat-label">Records</div></div><div class="stat-box"><div class="stat-value">${r.periods.length}</div><div class="stat-label">Periods</div></div><div class="stat-box"><div class="stat-value">${r.mainGroups.length}</div><div class="stat-label">Main Groups</div></div><div class="stat-box"><div class="stat-value">${fmtNum(grandTotal)}</div><div class="stat-label">Grand Total</div></div></div></div>`;
+            reportHTML+=`<div class="section"><h2>Annual Trend Chart</h2><div class="chart-container"><canvas id="trendChart"></canvas></div></div>`;
+            reportHTML+=`<div class="section"><h2>Main Groups Comparison</h2><div class="chart-container"><canvas id="groupChart"></canvas></div></div>`;
+            reportHTML+=`<div class="section"><h2>Main Groups Data Table</h2><table><thead><tr><th>${r.mainCol}</th>${r.periods.map(p=>`<th>${p}</th>`).join('')}<th>Total</th></tr></thead><tbody>`;
+            r.mainGroups.forEach(g=>{
+                let rowTotal=0;
+                reportHTML+=`<tr><td><strong>${g}</strong></td>`;
+                r.periods.forEach(p=>{
+                    let val=d.mainByPeriod[g]?.[p]||0;
+                    rowTotal+=val;
+                    reportHTML+=`<td>${fmtNum(val)}</td>`;
                 });
-                html+='</table></div>';
-                
-                updateProgressBar(progressContainer, 85);
-                
-                html+='<div class="footer"><p>National Malaria Control Programme | Ministry of Health, Sierra Leone</p><p>© 2025 ICF-SL | Hierarchical Data Analysis</p><p>Report generated on '+new Date().toLocaleString()+'</p></div></body></html>';
-                
-                updateProgressBar(progressContainer, 95);
-                
-                let blob=new Blob([html],{type:'text/html'});
-                let url=URL.createObjectURL(blob);
-                let a=document.createElement('a');
-                a.href=url;
-                a.download='ICF-SL_Analysis_Report_'+new Date().getTime()+'.html';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                
-                updateProgressBar(progressContainer, 100);
-                setTimeout(()=>hideProgressBar(progressContainer), 500);
-            }, 100);
+                reportHTML+=`<td><strong>${fmtNum(rowTotal)}</strong></td></tr>`;
+            });
+            reportHTML+=`</tbody></table></div><div class="footer"><p>National Malaria Control Programme | Ministry of Health, Sierra Leone</p><p>© 2025 ICF-SL | Hierarchical Data Analysis</p></div><script>
+            const periods=${JSON.stringify(r.periods)};
+            const trendData=${JSON.stringify(r.periods.map(p=>d.byPeriod[p]||0))};
+            const mainGroups=${JSON.stringify(r.mainGroups)};
+            const groupData=${JSON.stringify(r.mainGroups.map(g=>r.periods.map(p=>d.mainByPeriod[g]?.[p]||0)))};
+            new Chart(document.getElementById('trendChart'),{type:'line',data:{labels:periods,datasets:[{label:'${activeValueCol}',data:trendData,borderColor:'#004080',backgroundColor:'rgba(0,64,128,0.1)',borderWidth:3,fill:true,tension:0.4}]},options:{responsive:true,maintainAspectRatio:true}});
+            const groupDatasets=mainGroups.map((g,i)=>({label:g,data:groupData[i],borderColor:'hsl('+(i*40)+',70%,50%)',tension:0.4}));
+            new Chart(document.getElementById('groupChart'),{type:'line',data:{labels:periods,datasets:groupDatasets},options:{responsive:true,maintainAspectRatio:true}});
+            <\/script></body></html>`;
+            let blob=new Blob([reportHTML],{type:'text/html'});
+            let a=document.createElement('a');
+            a.href=URL.createObjectURL(blob);
+            a.download='ICF-SL_Interactive_Report_'+new Date().getTime()+'.html';
+            a.click();
+            URL.revokeObjectURL(a.href);
         }
         
         function exportExcel(){
             if(!analysisResult){alert('No analysis results. Run analysis first.');return;}
-            let progressContainer=showProgressBar('Generating Excel file...');
-            setTimeout(()=>{
-                updateProgressBar(progressContainer, 20);
-                let r=analysisResult;
-                let d=r.data[activeValueCol];
-                let wb=XLSX.utils.book_new();
-                
-                updateProgressBar(progressContainer, 35);
-                
-                let summaryData=[
-                    ['ICF-SL Hierarchical Data Analysis Report'],
-                    ['Generated',new Date().toLocaleString()],
-                    ['Active Variable',activeValueCol],
-                    ['Aggregation Method',currentAgg.toUpperCase()],
-                    [],
-                    ['Summary Statistics'],
-                    ['Total Records',r.filtered.length],
-                    ['Years',r.years.length],
-                    ['Main Groups',r.mainGroups.length],
-                    ['Grand Total',Object.values(d.annual).reduce((a,b)=>a+b,0)]
-                ];
-                let ws1=XLSX.utils.aoa_to_sheet(summaryData);
-                XLSX.utils.book_append_sheet(wb,ws1,'Summary');
-                
-                updateProgressBar(progressContainer, 50);
-                
-                let annualData=[['Year',activeValueCol]];
-                r.years.forEach(yr=>{annualData.push([yr,d.annual[yr]||0]);});
-                let ws2=XLSX.utils.aoa_to_sheet(annualData);
-                XLSX.utils.book_append_sheet(wb,ws2,'Annual Trend');
-                
-                updateProgressBar(progressContainer, 65);
-                
-                let mainGroupsData=[[r.mainCol,...r.years.map(String),'Total']];
-                r.mainGroups.forEach(g=>{
-                    let row=[g];
-                    let rowTotal=0;
-                    r.years.forEach(yr=>{
-                        let val=d.mainByYear[g]?.[yr]||0;
-                        row.push(val);
-                        rowTotal+=val;
-                    });
-                    row.push(rowTotal);
-                    mainGroupsData.push(row);
+            let r=analysisResult;
+            let d=r.data[activeValueCol];
+            let wb=XLSX.utils.book_new();
+            let summaryData=[['ICF-SL Hierarchical Data Analysis Report'],['Generated',new Date().toLocaleString()],['Active Variable',activeValueCol],['Aggregation Method',currentAgg.toUpperCase()],[],['Summary Statistics'],['Total Records',r.filtered.length],['Periods',r.periods.length],['Main Groups',r.mainGroups.length],['Grand Total',Object.values(d.byPeriod).reduce((a,b)=>a+b,0)]];
+            let ws1=XLSX.utils.aoa_to_sheet(summaryData);
+            XLSX.utils.book_append_sheet(wb,ws1,'Summary');
+            let annualData=[['Period',activeValueCol]];
+            r.periods.forEach(p=>{annualData.push([p,d.byPeriod[p]||0]);});
+            let ws2=XLSX.utils.aoa_to_sheet(annualData);
+            XLSX.utils.book_append_sheet(wb,ws2,'Period Trend');
+            let mainGroupsData=[[r.mainCol,...r.periods.map(String),'Total']];
+            r.mainGroups.forEach(g=>{
+                let row=[g];
+                let rowTotal=0;
+                r.periods.forEach(p=>{
+                    let val=d.mainByPeriod[g]?.[p]||0;
+                    row.push(val);
+                    rowTotal+=val;
                 });
-                let colTotals=[' Column Totals'];
-                r.years.forEach(yr=>{
-                    let sum=r.mainGroups.reduce((acc,g)=>acc+(d.mainByYear[g]?.[yr]||0),0);
-                    colTotals.push(sum);
-                });
-                let grandSum=r.mainGroups.reduce((acc,g)=>acc+Object.values(d.mainByYear[g]).reduce((a,b)=>a+b,0),0);
-                colTotals.push(grandSum);
-                mainGroupsData.push(colTotals);
-                let ws3=XLSX.utils.aoa_to_sheet(mainGroupsData);
-                XLSX.utils.book_append_sheet(wb,ws3,'Main Groups');
-                
-                updateProgressBar(progressContainer, 80);
-                
-                if(r.hasMonth){
-                    let monthlyData=[['Date',activeValueCol]];
-                    r.years.forEach(yr=>{
-                        for(let m=1;m<=12;m++){
-                            let label=String(yr)+'-'+String(m).padStart(2,'0');
-                            monthlyData.push([label,d.monthly[yr]?.[m]||0]);
-                        }
-                    });
-                    let ws4=XLSX.utils.aoa_to_sheet(monthlyData);
-                    XLSX.utils.book_append_sheet(wb,ws4,'Monthly');
-                }
-                
-                updateProgressBar(progressContainer, 90);
-                
-                XLSX.writeFile(wb,'ICF-SL_Analysis_'+new Date().getTime()+'.xlsx');
-                
-                updateProgressBar(progressContainer, 100);
-                setTimeout(()=>hideProgressBar(progressContainer), 500);
-            }, 100);
+                row.push(rowTotal);
+                mainGroupsData.push(row);
+            });
+            let colTotals=['Column Totals'];
+            r.periods.forEach(p=>{
+                let sum=r.mainGroups.reduce((acc,g)=>acc+(d.mainByPeriod[g]?.[p]||0),0);
+                colTotals.push(sum);
+            });
+            let grandSum=r.mainGroups.reduce((acc,g)=>acc+Object.values(d.mainByPeriod[g]).reduce((a,b)=>a+b,0),0);
+            colTotals.push(grandSum);
+            mainGroupsData.push(colTotals);
+            let ws3=XLSX.utils.aoa_to_sheet(mainGroupsData);
+            XLSX.utils.book_append_sheet(wb,ws3,'Main Groups');
+            XLSX.writeFile(wb,'ICF-SL_Analysis_'+new Date().getTime()+'.xlsx');
         }
         
-        function showProgressBar(label){
-            let container=document.createElement('div');
-            container.style.cssText='position:fixed;bottom:30px;right:30px;background:white;border:3px solid #004080;border-radius:8px;padding:20px;width:300px;box-shadow:0 4px 12px rgba(0,0,0,0.2);z-index:9998;';
-            container.innerHTML='<div style="font-weight:700;color:#004080;margin-bottom:10px;font-size:14px;">'+label+'</div><div style="background:#e0e0e0;height:30px;border-radius:6px;overflow:hidden;border:2px solid #004080;"><div class="progress-fill" style="width:0%;height:100%;background:#004080;transition:width 0.3s ease;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:12px;">0%</div></div>';
-            document.body.appendChild(container);
-            return container;
-        }
-        
-        function updateProgressBar(container,percent){
-            let fill=container.querySelector('.progress-fill');
-            if(fill){
-                fill.style.width=percent+'%';
-                fill.textContent=percent+'%';
-            }
-        }
-        
-        function hideProgressBar(container){
-            if(container && container.parentNode){
-                container.parentNode.removeChild(container);
-            }
-        }
         function resetConfig(){
-            selectedYear='';selectedMonth='';selectedMain='';selectedSub='';selectedValues=[];currentAgg='sum';
-            document.querySelectorAll('.var-chip').forEach(c=>c.classList.remove('selected','selected-green','selected-green'));
+            selectedYear='';selectedPeriod='';selectedMain='';selectedSub='';selectedValues=[];currentAgg='sum';
+            document.querySelectorAll('.var-chip').forEach(c=>c.classList.remove('selected','selected-green'));
             document.getElementById('mainFilterSection').classList.add('hidden');
             document.getElementById('subFilterSection').classList.add('hidden');
         }
