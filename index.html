@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ICF-SL Multi-Variable Data Analysis Tool</title>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { margin: 0; padding: 20px; background-color: #ffffff; font-family: 'Oswald', Arial, sans-serif; color: #000000; font-weight: 500; }
+        .page-container { width: 100%; max-width: 1600px; margin: 0 auto; }
+        .icon { width: 20px; height: 20px; fill: currentColor; vertical-align: middle; }
+        .icon-lg { width: 24px; height: 24px; }
+        .icon-xl { width: 32px; height: 32px; }
+
+        /* Header */
+        .page-header { background-color: #004080; color: #ffffff; padding: 25px 30px; text-align: center; margin-bottom: 0; border-radius: 8px 8px 0 0; }
+        .logo-row { display: flex; justify-content: center; align-items: center; gap: 30px; margin-bottom: 15px; }
+        .logo-box { background: #ffffff; border-radius: 8px; padding: 10px; display: flex; align-items: center; justify-content: center; }
+        .logo-box img { width: 100px; height: auto; border-radius: 6px; }
+        .page-header h3 { margin: 12px 0 5px; font-size: 14px; font-weight: 700; letter-spacing: 1px; }
+        .page-header .tagline { margin: 0; font-size: 10px; font-weight: 500; font-style: italic; }
+        .page-header h1 { margin: 20px 0 10px; font-size: 24px; font-weight: 700; letter-spacing: 1px; }
+        .page-header .subtitle { font-size: 14px; font-weight: 500; }
+
+        /* Roadmap */
+        .roadmap-bar { background: #fff; border: 4px double #004080; border-top: none; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .roadmap-step { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #999; }
+        .roadmap-step.active { color: #004080; font-weight: 700; }
+        .roadmap-step.completed { color: #28a745; }
+        .step-num { width: 32px; height: 32px; border-radius: 50%; background: #e0e0e0; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; }
+        .roadmap-step.active .step-num { background: #004080; color: #fff; }
+        .roadmap-step.completed .step-num { background: #28a745; color: #fff; }
+        .step-connector { width: 40px; height: 3px; background: #e0e0e0; }
+        .step-connector.completed { background: #28a745; }
+
+        /* Cards */
+        .content-card { border: 4px double #004080; border-radius: 12px; padding: 12px; background-color: #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 15px; }
+        .content-inner { padding: 20px; }
+        .section-header { background-color: #004080; color: #ffffff; padding: 15px 20px; margin-bottom: 20px; border-radius: 6px; display: flex; align-items: center; gap: 15px; }
+        .section-icon { background: #ffffff; color: #004080; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; flex-shrink: 0; }
+        .section-title { font-size: 18px; font-weight: 700; }
+
+        /* Upload */
+        .upload-box { background: #f8f9fa; padding: 3rem; border-radius: 8px; border: 3px dashed #004080; text-align: center; cursor: pointer; transition: all 0.3s; }
+        .upload-box:hover { background: #e7f3ff; }
+        .upload-box.loaded { border-style: solid; border-color: #28a745; background: #d4edda; }
+        .upload-box h4 { color: #004080; margin-bottom: 0.5rem; font-size: 18px; }
+        .upload-box p { font-size: 13px; color: #666; }
+        .upload-box input { display: none; }
+        .upload-status { font-size: 14px; font-weight: 700; margin-top: 15px; }
+        .upload-status.success { color: #28a745; }
+        .upload-status.error { color: #dc3545; }
+
+        /* Buttons */
+        .btn { padding: 12px 20px; border: 2px solid #004080; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-family: 'Oswald', Arial, sans-serif; transition: all 0.2s; margin: 4px; display: inline-flex; align-items: center; gap: 8px; }
+        .btn-primary { background: #004080; color: #fff; }
+        .btn-primary:hover { background: #0056b3; }
+        .btn-secondary { background: #fff; color: #004080; }
+        .btn-secondary:hover { background: #004080; color: #fff; }
+        .btn-success { background: #28a745; color: #fff; border-color: #28a745; }
+        .btn-success:hover { background: #218838; }
+        .btn-info { background: #17a2b8; color: #fff; border-color: #17a2b8; }
+        .btn-danger { background: #dc3545; color: #fff; border-color: #dc3545; }
+        .btn-lg { padding: 16px 32px; font-size: 15px; }
+
+        /* Forms */
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 700; color: #004080; font-size: 13px; }
+        .form-control { width: 100%; padding: 12px 14px; border: 2px solid #004080; border-radius: 6px; font-size: 14px; font-family: 'Oswald', Arial, sans-serif; background: #fff; color: #000; }
+        .form-control:focus { outline: none; border-color: #0056b3; box-shadow: 0 0 0 3px rgba(0,64,128,0.2); }
+        .form-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 15px; }
+        .form-row-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 15px; }
+
+        /* Config cards */
+        .config-card { background: #f8f9fa; padding: 1.5rem; border-radius: 8px; border: 2px solid #004080; margin: 1rem 0; }
+        .config-card h4 { color: #004080; margin-bottom: 1rem; font-size: 14px; display: flex; align-items: center; gap: 10px; }
+        .config-card.highlight { background: #e7f3ff; }
+
+        /* Variable chips */
+        .var-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; max-height: 200px; overflow-y: auto; padding: 5px; }
+        .var-chip { padding: 10px 18px; background: #fff; border: 2px solid #dee2e6; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 13px; transition: all 0.2s; font-family: 'Oswald', Arial, sans-serif; user-select: none; }
+        .var-chip:hover { border-color: #004080; background: #e7f3ff; }
+        .var-chip.selected { background: #004080; color: #fff; border-color: #004080; }
+        .var-chip.selected-green { background: #28a745; color: #fff; border-color: #28a745; }
+        .var-chip.disabled { opacity: 0.4; pointer-events: none; }
+
+        /* Summary cards */
+        .summary-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px; }
+        .summary-card { background: #f8f9fa; border: 3px solid #004080; border-radius: 8px; padding: 20px; text-align: center; }
+        .summary-card .value { font-size: 28px; font-weight: 700; color: #004080; }
+        .summary-card .label { font-size: 11px; color: #666; margin-top: 5px; font-weight: 600; }
+
+        /* Charts */
+        .chart-section { background: #fff; border: 2px solid #004080; border-radius: 8px; padding: 25px; margin-bottom: 20px; }
+        .chart-section h4 { color: #004080; font-size: 16px; margin-bottom: 15px; border-bottom: 3px solid #004080; padding-bottom: 8px; }
+        .chart-wrapper { position: relative; height: 400px; margin-bottom: 10px; }
+        .chart-wrapper-tall { position: relative; height: 500px; margin-bottom: 10px; }
+
+        /* Table */
+        .table-wrapper { overflow: auto; border: 2px solid #004080; border-radius: 8px; margin: 1rem 0; max-height: 500px; }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .data-table th, .data-table td { padding: 10px 12px; border: 1px solid #ccc; white-space: nowrap; }
+        .data-table th { background: #004080; color: #fff; font-weight: 700; position: sticky; top: 0; z-index: 10; text-align: center; }
+        .data-table td { text-align: right; }
+        .data-table td.row-label { text-align: left; background: #e7f3ff; font-weight: 700; color: #004080; position: sticky; left: 0; z-index: 5; }
+        .data-table tr:nth-child(even) td:not(.row-label) { background: #f8f9fa; }
+        .data-table tr:hover td:not(.row-label) { background: #e7f3ff; }
+        .data-table .total-cell { background: #dce8f5; font-weight: 700; color: #004080; }
+
+        /* Variable selector */
+        .variable-selector { background: #f8f9fa; border: 2px solid #004080; border-radius: 8px; padding: 15px; margin-bottom: 20px; }
+        .variable-selector h5 { color: #004080; font-size: 14px; margin-bottom: 12px; font-weight: 700; }
+        .var-checkbox-group { display: flex; flex-wrap: wrap; gap: 15px; }
+        .var-checkbox-item { display: flex; align-items: center; gap: 8px; }
+        .var-checkbox-item input { width: 18px; height: 18px; accent-color: #004080; cursor: pointer; }
+        .var-checkbox-item label { cursor: pointer; font-weight: 600; font-size: 13px; color: #004080; }
+        .color-swatch { width: 16px; height: 16px; border-radius: 3px; display: inline-block; }
+
+        /* Toggle bar */
+        .toggle-bar { display: flex; flex-wrap: wrap; gap: 15px; padding: 15px 20px; background: #f8f9fa; border: 2px solid #004080; border-radius: 8px; margin-bottom: 15px; align-items: center; }
+        .toggle-item { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #004080; }
+        .toggle-item input[type="checkbox"] { width: 18px; height: 18px; accent-color: #004080; }
+        .case-toggle { display: flex; gap: 8px; margin-bottom: 15px; }
+        .case-toggle .btn { padding: 8px 16px; font-size: 12px; }
+        .case-toggle .btn.active { background: #004080; color: #fff; }
+
+        /* Tabs */
+        .analysis-tabs { display: flex; border-bottom: 3px solid #004080; margin-bottom: 20px; flex-wrap: wrap; }
+        .analysis-tab { padding: 15px 25px; cursor: pointer; font-weight: 700; font-size: 14px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 3px solid transparent; margin-bottom: -3px; transition: all 0.2s; }
+        .analysis-tab:hover { color: #004080; background: #e7f3ff; }
+        .analysis-tab.active { color: #004080; border-bottom-color: #004080; background: #fff; }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        /* Aggregation options */
+        .agg-options { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; }
+        .agg-option { padding: 12px 24px; background: #fff; border: 2px solid #004080; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 14px; color: #004080; font-family: 'Oswald', Arial, sans-serif; transition: all 0.2s; user-select: none; }
+        .agg-option:hover { background: #e7f3ff; }
+        .agg-option.selected { background: #004080; color: #fff; border-color: #004080; }
+
+        /* Button group */
+        .button-group { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 25px; }
+
+        /* Loading */
+        .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
+        .loading-overlay.hidden { display: none; }
+        .loading-spinner { width: 70px; height: 70px; border: 5px solid #e7f3ff; border-top: 5px solid #004080; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 1.5rem; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text { font-size: 1.5rem; font-weight: 700; color: #004080; }
+
+        .hidden { display: none !important; }
+
+        /* Footer */
+        .page-footer { background-color: #004080; color: #ffffff; padding: 20px 30px; text-align: center; font-size: 13px; line-height: 1.7; font-weight: 500; border-radius: 0 0 8px 8px; }
+        .page-footer p { margin: 6px 0 0; font-size: 12px; color: #ffffff; }
+
+        /* Group Tabs */
+        .main-group-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; border-bottom: 2px solid #004080; padding-bottom: 8px; }
+        .main-group-btn { padding: 10px 22px; background: #fff; border: 2px solid #004080; border-radius: 30px; font-weight: 700; font-size: 13px; cursor: pointer; transition: all 0.2s; color: #004080; font-family: 'Oswald', Arial, sans-serif; }
+        .main-group-btn.active { background: #004080; color: #fff; }
+        .main-group-btn:hover { background: #004080; color: #fff; }
+        .subgroup-container { margin-top: 15px; background: #f8f9fa; border-left: 5px solid #004080; padding: 12px; border-radius: 8px; }
+        .subgroup-title { font-weight: 700; color: #004080; font-size: 14px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .subgroup-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; }
+        .subgroup-chip { padding: 8px 16px; background: #fff; border: 2px solid #dee2e6; border-radius: 30px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s; }
+        .subgroup-chip.active { background: #004080; color: #fff; border-color: #004080; }
+        .subgroup-chip:hover { border-color: #004080; background: #e7f3ff; }
+        .filter-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; padding: 12px; background: #fff; border: 2px solid #004080; border-radius: 6px; max-height: 200px; overflow-y: auto; }
+        .filter-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; cursor: pointer; font-size: 12px; transition: all 0.2s; }
+        .filter-item:hover { border-color: #004080; background: #e7f3ff; }
+        .filter-item.selected { border-color: #28a745; background: #d4edda; }
+        .filter-item input { width: 16px; height: 16px; accent-color: #28a745; cursor: pointer; }
+        
+        .data-preview { background: #f0f0f0; padding: 10px; border-radius: 6px; font-size: 11px; margin-top: 10px; max-height: 150px; overflow: auto; font-family: monospace; }
+        
+        @media (max-width: 900px) {
+            .form-row, .form-row-3, .summary-cards { grid-template-columns: 1fr; }
+            .roadmap-bar { justify-content: center; }
+            .analysis-tabs { flex-wrap: wrap; }
+        }
+    </style>
+</head>
+<body>
+    <svg style="display:none;"><symbol id="icon-upload" viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></symbol><symbol id="icon-settings" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></symbol><symbol id="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></symbol><symbol id="icon-refresh" viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></symbol><symbol id="icon-download" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></symbol></svg>
+
+    <div id="loadingOverlay" class="loading-overlay hidden"><div class="loading-spinner"></div><div class="loading-text" id="loadingText">Processing...</div></div>
+
+    <div class="page-container">
+        <div class="page-header"><div class="logo-row"><div class="logo-box"><img src="https://github.com/mohamedsillahkanu/gdp-dashboard-2/raw/6c7463b0d5c3be150aafae695a4bcbbd8aeb1499/ICF-SL.jpg" alt="ICF-SL Logo"></div></div><h3>Informatics Consultancy Firm-Sierra Leone (ICF-SL)</h3><p class="tagline">Driving Data-Driven Solutions for Health and Development</p><h1>MULTI-VARIABLE DATA ANALYSIS TOOL</h1><p class="subtitle">Analyze Multiple Variables Simultaneously with Hierarchical Grouping</p></div>
+        <div class="roadmap-bar"><div class="roadmap-step active" id="step1"><div class="step-num">1</div><span>Upload</span></div><div class="step-connector" id="conn1"></div><div class="roadmap-step" id="step2"><div class="step-num">2</div><span>Configure</span></div><div class="step-connector" id="conn2"></div><div class="roadmap-step" id="step3"><div class="step-num">3</div><span>Analyze</span></div><div class="step-connector" id="conn3"></div><div class="roadmap-step" id="step4"><div class="step-num">4</div><span>Export</span></div></div>
+
+        <div class="content-card" id="uploadSection"><div class="content-inner"><div class="section-header"><span class="section-icon">1</span><span class="section-title">UPLOAD DATA FILE</span></div>
+            <div class="upload-box" id="uploadBox" onclick="document.getElementById('fileInput').click()">
+                <svg class="icon icon-xl" style="color:#004080;margin-bottom:10px;"><use href="#icon-upload"/></svg>
+                <h4>Click to Upload Excel or CSV File</h4>
+                <p>Supported formats: .xlsx, .xls, .csv (must have headers in first row)</p>
+                <input type="file" id="fileInput" accept=".csv,.xlsx,.xls">
+                <div class="upload-status" id="uploadStatus"></div>
+            </div>
+            <div id="dataPreview" class="data-preview hidden"></div>
+        </div></div>
+
+        <div class="content-card hidden" id="configSection"><div class="content-inner"><div class="section-header"><span class="section-icon">2</span><span class="section-title">CONFIGURE HIERARCHICAL GROUPING</span></div>
+            <div class="config-card highlight"><h4>PERIOD COLUMN (yyyy-mm format)</h4><div class="var-chips" id="periodChips"></div></div>
+            <div class="config-card"><h4>YEAR COLUMN (Optional)</h4><div class="var-chips" id="yearChips"></div><div style="margin-top:8px;"><button class="btn btn-secondary" style="padding:6px 14px;" onclick="clearYear()">Skip</button></div></div>
+            <div class="config-card highlight"><h4>MAIN GROUP (e.g., District)</h4><div class="var-chips" id="mainGroupChips"></div><div id="mainFilterSection" class="hidden" style="margin-top:15px;"><label style="font-weight:700;">Filter Main Groups:</label><div class="filter-actions"><button class="sel-all" onclick="toggleAllFilters('mainFilter',true)">Select All</button><button class="sel-none" onclick="toggleAllFilters('mainFilter',false)">Clear</button></div><div class="filter-grid" id="mainFilterGrid"></div></div></div>
+            <div class="config-card"><h4>SUB GROUP (Optional)</h4><div class="var-chips" id="subGroupChips"></div><div id="subFilterSection" class="hidden" style="margin-top:15px;"><label style="font-weight:700;">Filter Sub Groups:</label><div class="filter-actions"><button class="sel-all" onclick="toggleAllFilters('subFilter',true)">Select All</button><button class="sel-none" onclick="toggleAllFilters('subFilter',false)">Clear</button></div><div class="filter-grid" id="subFilterGrid"></div></div></div>
+            <div class="config-card"><h4>VALUE COLUMNS (Numeric - Select Multiple)</h4><div class="var-chips" id="valueChips"></div></div>
+            <div class="config-card"><h4>AGGREGATION METHOD</h4><div class="agg-options"><div class="agg-option selected" data-agg="sum" onclick="selectAgg(this)">SUM</div><div class="agg-option" data-agg="average" onclick="selectAgg(this)">AVERAGE</div><div class="agg-option" data-agg="count" onclick="selectAgg(this)">COUNT</div></div></div>
+            <div class="button-group"><button class="btn btn-success btn-lg" onclick="runAnalysis()">RUN ANALYSIS</button><button class="btn btn-secondary" onclick="resetConfig()">Reset</button></div>
+        </div></div>
+
+        <div class="content-card hidden" id="resultsSection"><div class="content-inner"><div class="section-header"><span class="section-icon">3</span><span class="section-title">MULTI-VARIABLE ANALYSIS RESULTS</span></div>
+            <div class="summary-cards" id="summaryCards"></div>
+            
+            <div class="variable-selector"><h5>📊 SELECT VARIABLES TO DISPLAY (Check/Uncheck to Toggle):</h5><div class="var-checkbox-group" id="variableCheckboxGroup"></div></div>
+
+            <div class="analysis-tabs"><div class="analysis-tab active" onclick="switchAnalysisTab('trend')">Annual Trend</div><div class="analysis-tab" onclick="switchAnalysisTab('group')">Main Groups</div><div class="analysis-tab" onclick="switchAnalysisTab('subhierarchy')">Sub-Groups by Main</div><div class="analysis-tab" onclick="switchAnalysisTab('table')">Pivot Table</div></div>
+            
+            <div class="tab-panel active" id="panel-trend"><div class="chart-section"><h4>Annual Trend - Selected Variables</h4><div class="chart-wrapper"><canvas id="annualChart"></canvas></div></div></div>
+            <div class="tab-panel" id="panel-group"><div class="chart-section"><h4>Main Groups Trend Over Periods - Selected Variables</h4><div class="chart-wrapper-tall"><canvas id="groupChart"></canvas></div></div></div>
+            <div class="tab-panel" id="panel-subhierarchy"><div class="chart-section"><h4>Sub-Groups by Main Group</h4><div id="mainGroupTabsContainer" class="main-group-tabs"></div><div id="subGroupDetailPanel"><div class="subgroup-container"><div class="subgroup-title">Select a Main Group to view its sub-areas</div><div id="subGroupChipsContainer" class="subgroup-chips"></div><div class="chart-wrapper-tall"><canvas id="subGroupChart"></canvas></div></div></div></div></div>
+            <div class="tab-panel" id="panel-table"><div class="toggle-bar"><div class="toggle-item"><input type="checkbox" id="togRowTotals" checked onchange="renderPivotTable()"><label>Row Totals</label></div><div class="toggle-item"><input type="checkbox" id="togColTotals" checked onchange="renderPivotTable()"><label>Column Totals</label></div></div><div class="table-wrapper" id="pivotTableWrapper"></div></div>
+            <div class="button-group"><button class="btn btn-success btn-lg" onclick="downloadInteractiveReport()">📊 Download Interactive Report</button><button class="btn btn-info btn-lg" onclick="exportExcel()">Download Excel</button><button class="btn btn-secondary btn-lg" onclick="resetAll()">Start Over</button></div>
+        </div></div>
+        <div class="page-footer"><p>National Malaria Control Programme | Ministry of Health, Sierra Leone</p><p>© 2025 ICF-SL | Multi-Variable Hierarchical Data Analysis</p></div>
+    </div>
+
+    <script>
+        const colorPalette = ['#004080', '#dc3545', '#28a745', '#ffc107', '#17a2b8', '#6f42c1', '#fd7e14', '#e83e8c'];
+        
+        function excelDateToYyyyMm(serial) {
+            if (typeof serial !== 'number') return String(serial).trim();
+            const epoch = new Date(Date.UTC(1899, 11, 31));
+            const date = new Date(epoch.getTime() + serial * 86400000);
+            const year = date.getUTCFullYear();
+            const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+            return `${year}-${month}`;
+        }
+        
+        function formatPeriodValue(value) {
+            if (value === null || value === undefined || value === '') return '';
+            let str = String(value).trim();
+            if (typeof value === 'number' && value > 40000 && value < 50000) {
+                return excelDateToYyyyMm(value);
+            }
+            if (/^\d{4}-\d{1,2}$/.test(str)) {
+                let parts = str.split('-');
+                return `${parts[0]}-${String(parts[1]).padStart(2, '0')}`;
+            }
+            let d = new Date(str);
+            if (!isNaN(d.getTime())) {
+                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            }
+            return str;
+        }
+
+        let rawData=[], allColumns=[], numericCols=[], selectedPeriod='', selectedYear='', selectedMain='', selectedSub='', selectedValues=[], currentAgg='sum';
+        let analysisResult=null, charts={}, activeMainGroupForSub='', activeVariables=[];
+        
+        function showLoading(t){document.getElementById('loadingText').textContent=t;document.getElementById('loadingOverlay').classList.remove('hidden');}
+        function hideLoading(){document.getElementById('loadingOverlay').classList.add('hidden');}
+        function updateRoadmap(step){for(let i=1;i<=4;i++){let s=document.getElementById('step'+i),c=document.getElementById('conn'+(i-1));s.classList.remove('active','completed');if(c)c.classList.remove('completed');if(i<step){s.classList.add('completed');s.querySelector('.step-num').innerHTML='✓';if(c)c.classList.add('completed');}else if(i===step){s.classList.add('active');s.querySelector('.step-num').textContent=i;}else s.querySelector('.step-num').textContent=i;}}
+        
+        document.getElementById('fileInput').onchange=function(e){if(e.target.files.length)handleFile(e.target.files[0]);};
+        
+        function handleFile(file){
+            let name=file.name.toLowerCase();
+            showLoading('Reading file...');
+            if(name.endsWith('.csv')){
+                Papa.parse(file, {header:true, dynamicTyping:true, skipEmptyLines:true, complete:function(results){ processData(results.data, results.meta.fields || []); }, error:function(err){ hideLoading(); document.getElementById('uploadStatus').innerHTML='❌ Error reading CSV: '+err.message; document.getElementById('uploadStatus').className='upload-status error'; }});
+            } else {
+                let reader=new FileReader();
+                reader.onload=function(e){
+                    try{
+                        let data=new Uint8Array(e.target.result);
+                        let workbook=XLSX.read(data,{type:'array'});
+                        let sheet=workbook.Sheets[workbook.SheetNames[0]];
+                        let jsonData=XLSX.utils.sheet_to_json(sheet,{defval:''});
+                        if(jsonData.length===0){ throw new Error('No data found in Excel file'); }
+                        let headers=Object.keys(jsonData[0]);
+                        processData(jsonData, headers);
+                    }catch(err){
+                        hideLoading();
+                        document.getElementById('uploadStatus').innerHTML='❌ Error reading Excel: '+err.message;
+                        document.getElementById('uploadStatus').className='upload-status error';
+                    }
+                };
+                reader.onerror=function(){
+                    hideLoading();
+                    document.getElementById('uploadStatus').innerHTML='❌ File read error';
+                    document.getElementById('uploadStatus').className='upload-status error';
+                };
+                reader.readAsArrayBuffer(file);
+            }
+        }
+        
+        function processData(data, headers){
+            if(!data || data.length===0){
+                hideLoading();
+                document.getElementById('uploadStatus').innerHTML='❌ No data found in file.';
+                document.getElementById('uploadStatus').className='upload-status error';
+                return;
+            }
+            
+            rawData=data.map(row=>{
+                let newRow={...row};
+                for(let col of headers){
+                    if(newRow[col] && typeof newRow[col]==='number' && newRow[col]>40000 && newRow[col]<50000){
+                        newRow[col]=excelDateToYyyyMm(newRow[col]);
+                    }
+                }
+                return newRow;
+            });
+            allColumns=headers.filter(h=>h && h.trim()!=='');
+            
+            let previewDiv=document.getElementById('dataPreview');
+            previewDiv.classList.remove('hidden');
+            let previewHtml='<strong>📊 Data Preview (first 5 rows):</strong><br><table style="font-size:11px;border-collapse:collapse;">';
+            previewHtml+='<tr>';
+            allColumns.forEach(col=>previewHtml+=`<th style="border:1px solid #ccc;padding:4px;">${col}</th>`);
+            previewHtml+='</tr>';
+            for(let i=0;i<Math.min(5,rawData.length);i++){
+                previewHtml+='<tr>';
+                allColumns.forEach(col=>{
+                    let val=rawData[i][col];
+                    let display=(val===null||val===undefined||val==='')?'-':String(val).substring(0,30);
+                    previewHtml+=`<td style="border:1px solid #ccc;padding:4px;">${display}</td>`;
+                });
+                previewHtml+='</tr>';
+            }
+            previewHtml+='</table>';
+            previewDiv.innerHTML=previewHtml;
+            
+            numericCols=[];
+            for(let col of allColumns){
+                let numCount=0, validCount=0;
+                for(let i=0;i<Math.min(rawData.length,100);i++){
+                    let v=rawData[i][col];
+                    if(v!==null && v!==undefined && v!==''){
+                        validCount++;
+                        if(typeof v==='number' || (!isNaN(parseFloat(v)) && isFinite(v))){
+                            numCount++;
+                        }
+                    }
+                }
+                if(validCount>0 && (numCount/validCount)>0.6){
+                    numericCols.push(col);
+                }
+            }
+            
+            document.getElementById('uploadBox').classList.add('loaded');
+            document.getElementById('uploadStatus').innerHTML=`✓ Successfully loaded: ${rawData.length} rows, ${allColumns.length} columns`;
+            document.getElementById('uploadStatus').className='upload-status success';
+            populateChips();
+            document.getElementById('configSection').classList.remove('hidden');
+            updateRoadmap(2);
+            hideLoading();
+            document.getElementById('configSection').scrollIntoView({behavior:'smooth'});
+        }
+        
+        function populateChips(){
+            buildChips('periodChips',allColumns,'period');
+            buildChips('yearChips',allColumns,'year');
+            buildChips('mainGroupChips',allColumns,'main');
+            buildChips('subGroupChips',allColumns,'sub');
+            buildChips('valueChips',numericCols,'value');
+        }
+        
+        function buildChips(containerId,columns,type){
+            let container=document.getElementById(containerId);
+            if(!container)return;
+            container.innerHTML='';
+            if(!columns || columns.length===0){
+                container.innerHTML='<span style="color:#999;">No columns available</span>';
+                return;
+            }
+            columns.forEach(col=>{
+                let chip=document.createElement('div');
+                chip.className='var-chip';
+                chip.textContent=col;
+                chip.dataset.col=col;
+                chip.onclick=()=>toggleChip(chip,type);
+                container.appendChild(chip);
+            });
+        }
+        
+        function toggleChip(chip,type){
+            if(type==='value'){
+                chip.classList.toggle('selected');
+                selectedValues=Array.from(document.querySelectorAll('#valueChips .var-chip.selected')).map(c=>c.dataset.col);
+            }else{
+                document.querySelectorAll('#'+type+'Chips .var-chip').forEach(c=>c.classList.remove('selected-green'));
+                chip.classList.add('selected-green');
+                if(type==='period')selectedPeriod=chip.dataset.col;
+                if(type==='year')selectedYear=chip.dataset.col;
+                if(type==='main'){
+                    selectedMain=chip.dataset.col;
+                    document.getElementById('mainFilterSection').classList.remove('hidden');
+                    buildFilterGrid('mainFilterGrid',selectedMain,'mainFilter');
+                }
+                if(type==='sub'){
+                    selectedSub=chip.dataset.col;
+                    document.getElementById('subFilterSection').classList.remove('hidden');
+                    buildFilterGrid('subFilterGrid',selectedSub,'subFilter');
+                }
+            }
+        }
+        
+        function buildFilterGrid(containerId,col,filterType){
+            let container=document.getElementById(containerId);
+            if(!container || !col)return;
+            let unique=[...new Set(rawData.map(r=>String(r[col]??'')))].filter(v=>v!=='' && v!=='undefined');
+            unique.sort();
+            container.innerHTML='';
+            if(unique.length===0){
+                container.innerHTML='<span style="color:#999;">No values found</span>';
+                return;
+            }
+            unique.forEach((val,idx)=>{
+                let div=document.createElement('div');
+                div.className='filter-item selected';
+                div.innerHTML='<input type="checkbox" id="'+filterType+'_'+idx+'" value="'+val.replace(/"/g,'&quot;')+'" checked><label>'+val+'</label>';
+                div.onclick=function(e){
+                    if(e.target.tagName!=='INPUT'){
+                        let cb=div.querySelector('input');
+                        cb.checked=!cb.checked;
+                    }
+                    div.classList.toggle('selected',div.querySelector('input').checked);
+                };
+                container.appendChild(div);
+            });
+        }
+        
+        function toggleAllFilters(prefix,state){
+            let container=document.getElementById(prefix+'Grid');
+            if(!container)return;
+            container.querySelectorAll('.filter-item').forEach(item=>{
+                let cb=item.querySelector('input');
+                if(cb){
+                    cb.checked=state;
+                    item.classList.toggle('selected',state);
+                }
+            });
+        }
+        
+        function getFilterValues(prefix){
+            let container=document.getElementById(prefix+'Grid');
+            if(!container)return null;
+            let cbs=container.querySelectorAll('input:checked');
+            return cbs.length===0?null:Array.from(cbs).map(cb=>cb.value);
+        }
+        
+        function clearYear(){selectedYear='';document.querySelectorAll('#yearChips .var-chip').forEach(c=>c.classList.remove('selected-green'));}
+        function selectAgg(el){document.querySelectorAll('.agg-option').forEach(o=>o.classList.remove('selected'));el.classList.add('selected');currentAgg=el.dataset.agg;}
+        function aggregate(vals){if(vals.length===0)return 0;if(currentAgg==='sum')return vals.reduce((a,b)=>a+b,0);if(currentAgg==='count')return vals.length;if(currentAgg==='average')return vals.reduce((a,b)=>a+b,0)/vals.length;return vals.reduce((a,b)=>a+b,0);}
+        function fmtNum(n){if(isNaN(n))return '0';if(currentAgg==='count')return Math.round(n).toLocaleString();if(currentAgg==='average')return n.toLocaleString(undefined,{minimumFractionDigits:1,maxFractionDigits:1});return n.toLocaleString(undefined,{minimumFractionDigits:0,maxFractionDigits:2});}
+        
+        function runAnalysis(){
+            if(!selectedPeriod){alert('Select Period column');return;}
+            if(!selectedMain){alert('Select Main Group column');return;}
+            if(selectedValues.length===0){alert('Select at least one Value column');return;}
+            
+            showLoading('Analyzing data...');
+            
+            let mainFilter=getFilterValues('mainFilter');
+            let subFilter=getFilterValues('subFilter');
+            
+            let filtered=rawData.filter(row=>{
+                if(mainFilter && !mainFilter.includes(String(row[selectedMain]??'')))return false;
+                if(selectedSub && subFilter && !subFilter.includes(String(row[selectedSub]??'')))return false;
+                return true;
+            });
+            
+            if(filtered.length===0){
+                hideLoading();
+                alert('No data after applying filters.');
+                return;
+            }
+            
+            let periods=[...new Set(filtered.map(r=>formatPeriodValue(r[selectedPeriod])))].filter(v=>v!=='' && v!=='undefined');
+            periods.sort();
+            
+            let mainGroups=[...new Set(filtered.map(r=>String(r[selectedMain]??'')))].filter(v=>v!=='');
+            mainGroups.sort();
+            
+            let subMap={};
+            if(selectedSub){
+                filtered.forEach(row=>{
+                    let main=String(row[selectedMain]??'');
+                    let sub=String(row[selectedSub]??'');
+                    if(main && sub){
+                        if(!subMap[main])subMap[main]=new Set();
+                        subMap[main].add(sub);
+                    }
+                });
+                for(let m in subMap)subMap[m]=Array.from(subMap[m]).sort();
+            }
+            
+            analysisResult={filtered,periods,mainGroups,subMap,periodCol:selectedPeriod,mainCol:selectedMain,subCol:selectedSub,valueCols:selectedValues,agg:currentAgg,data:{}};
+            
+            selectedValues.forEach(valCol=>{
+                let d={byPeriod:{},mainByPeriod:{},subByMainPeriod:{}};
+                periods.forEach(period=>{
+                    let rows=filtered.filter(r=>formatPeriodValue(r[selectedPeriod])===String(period));
+                    d.byPeriod[period]=aggregate(rows.map(r=>parseFloat(r[valCol])||0));
+                });
+                mainGroups.forEach(mg=>{
+                    d.mainByPeriod[mg]={};
+                    periods.forEach(period=>{
+                        let rows=filtered.filter(r=>String(r[selectedMain])===mg && formatPeriodValue(r[selectedPeriod])===String(period));
+                        d.mainByPeriod[mg][period]=aggregate(rows.map(r=>parseFloat(r[valCol])||0));
+                    });
+                });
+                if(selectedSub){
+                    Object.keys(subMap).forEach(mg=>{
+                        d.subByMainPeriod[mg]={};
+                        subMap[mg].forEach(sub=>{
+                            d.subByMainPeriod[mg][sub]={};
+                            periods.forEach(period=>{
+                                let rows=filtered.filter(r=>String(r[selectedMain])===mg && String(r[selectedSub])===sub && formatPeriodValue(r[selectedPeriod])===String(period));
+                                d.subByMainPeriod[mg][sub][period]=aggregate(rows.map(r=>parseFloat(r[valCol])||0));
+                            });
+                        });
+                    });
+                }
+                analysisResult.data[valCol]=d;
+            });
+            
+            activeVariables=selectedValues.slice();
+            renderResults();
+            document.getElementById('resultsSection').classList.remove('hidden');
+            hideLoading();
+            updateRoadmap(3);
+            document.getElementById('resultsSection').scrollIntoView({behavior:'smooth'});
+        }
+        
+        function renderResults(){
+            let d=analysisResult.data[selectedValues[0]];
+            let grandTotal=Object.values(d.byPeriod).reduce((a,b)=>a+b,0);
+            document.getElementById('summaryCards').innerHTML=`<div class="summary-card"><div class="value">${analysisResult.filtered.length.toLocaleString()}</div><div class="label">Records</div></div><div class="summary-card"><div class="value">${analysisResult.periods.length}</div><div class="label">Periods</div></div><div class="summary-card"><div class="value">${analysisResult.mainGroups.length}</div><div class="label">Main Groups</div></div><div class="summary-card"><div class="value">${selectedValues.length}</div><div class="label">Variables</div></div>`;
+            
+            buildVariableCheckboxes();
+            drawAllCharts();
+            renderPivotTable();
+            buildMainGroupTabs();
+        }
+        
+        function buildVariableCheckboxes(){
+            let container=document.getElementById('variableCheckboxGroup');
+            container.innerHTML='';
+            selectedValues.forEach((v,i)=>{
+                let div=document.createElement('div');
+                div.className='var-checkbox-item';
+                let color=colorPalette[i%colorPalette.length];
+                div.innerHTML=`<input type="checkbox" id="var_${i}" value="${v}" checked onchange="toggleVariable(this)"><label for="var_${i}"><span class="color-swatch" style="background:${color};"></span>${v}</label>`;
+                container.appendChild(div);
+            });
+        }
+        
+        function toggleVariable(checkbox){
+            if(checkbox.checked){
+                if(!activeVariables.includes(checkbox.value)){
+                    activeVariables.push(checkbox.value);
+                }
+            }else{
+                activeVariables=activeVariables.filter(v=>v!==checkbox.value);
+            }
+            drawAllCharts();
+            renderPivotTable();
+        }
+        
+        function destroyChart(key){if(charts[key]){charts[key].destroy();charts[key]=null;}}
+        
+        function switchAnalysisTab(tab){
+            document.querySelectorAll('.analysis-tab').forEach(t=>t.classList.remove('active'));
+            document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('panel-'+tab).classList.add('active');
+            setTimeout(()=>drawAllCharts(),50);
+        }
+        
+        function drawAllCharts(){
+            if(!analysisResult)return;
+            let r=analysisResult;
+            
+            destroyChart('annual');
+            let annualCtx=document.getElementById('annualChart');
+            if(annualCtx && activeVariables.length>0){
+                let datasets=activeVariables.map((v,i)=>({label:v+' ('+currentAgg+')',data:r.periods.map(p=>r.data[v].byPeriod[p]||0),borderColor:colorPalette[i%colorPalette.length],backgroundColor:colorPalette[i%colorPalette.length]+'30',borderWidth:3,tension:0.4,fill:false}));
+                charts.annual=new Chart(annualCtx,{type:'line',data:{labels:r.periods,datasets:datasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top'}}}});
+            }
+            
+            destroyChart('group');
+            let groupCtx=document.getElementById('groupChart');
+            if(groupCtx && activeVariables.length>0){
+                let datasets=[];
+                activeVariables.forEach((v,vi)=>{
+                    r.mainGroups.forEach((g,gi)=>{
+                        datasets.push({
+                            label:`${g} (${v})`,
+                            data:r.periods.map(p=>r.data[v].mainByPeriod[g]?.[p]||0),
+                            borderColor:colorPalette[(vi*r.mainGroups.length+gi)%colorPalette.length],
+                            tension:0.4,
+                            fill:false,
+                            borderWidth:2
+                        });
+                    });
+                });
+                charts.group=new Chart(groupCtx,{type:'line',data:{labels:r.periods,datasets:datasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top'}}}});
+            }
+        }
+        
+        function buildMainGroupTabs(){
+            let container=document.getElementById('mainGroupTabsContainer');
+            if(!analysisResult.subMap || Object.keys(analysisResult.subMap).length===0){
+                if(container)container.innerHTML='<p style="color:#666;">No sub-group column selected.</p>';
+                return;
+            }
+            container.innerHTML='';
+            analysisResult.mainGroups.forEach(mg=>{
+                let btn=document.createElement('button');
+                btn.className='main-group-btn'+(activeMainGroupForSub===mg||(!activeMainGroupForSub&&mg===analysisResult.mainGroups[0])?' active':'');
+                btn.textContent=mg;
+                btn.onclick=()=>{
+                    document.querySelectorAll('.main-group-btn').forEach(b=>b.classList.remove('active'));
+                    btn.classList.add('active');
+                    activeMainGroupForSub=mg;
+                    renderSubGroupPanel(mg);
+                };
+                container.appendChild(btn);
+            });
+            if(!activeMainGroupForSub && analysisResult.mainGroups.length)activeMainGroupForSub=analysisResult.mainGroups[0];
+            renderSubGroupPanel(activeMainGroupForSub);
+        }
+        
+        function renderSubGroupPanel(mainGroup){
+            let subs=analysisResult.subMap[mainGroup]||[];
+            let subContainer=document.getElementById('subGroupChipsContainer');
+            subContainer.innerHTML='';
+            if(subs.length===0){
+                subContainer.innerHTML='<span>No sub-groups found</span>';
+                return;
+            }
+            let activeSub=subs[0];
+            subs.forEach(sub=>{
+                let chip=document.createElement('div');
+                chip.className='subgroup-chip'+(activeSub===sub?' active':'');
+                chip.textContent=sub;
+                chip.onclick=()=>{
+                    subContainer.querySelectorAll('.subgroup-chip').forEach(c=>c.classList.remove('active'));
+                    chip.classList.add('active');
+                    drawSubGroupChart(mainGroup,sub);
+                };
+                subContainer.appendChild(chip);
+            });
+            drawSubGroupChart(mainGroup,activeSub);
+        }
+        
+        function drawSubGroupChart(mainGroup,subGroup){
+            let r=analysisResult;
+            if(!activeVariables || activeVariables.length===0)return;
+            
+            destroyChart('subGroup');
+            let ctx=document.getElementById('subGroupChart');
+            if(ctx){
+                let datasets=activeVariables.map((v,i)=>{
+                    if(!r.data[v].subByMainPeriod[mainGroup] || !r.data[v].subByMainPeriod[mainGroup][subGroup])return null;
+                    return {
+                        label:`${v}`,
+                        data:r.periods.map(p=>r.data[v].subByMainPeriod[mainGroup][subGroup][p]||0),
+                        borderColor:colorPalette[i%colorPalette.length],
+                        borderWidth:3,
+                        fill:false,
+                        tension:0.4
+                    };
+                }).filter(d=>d!==null);
+                
+                charts.subGroup=new Chart(ctx,{type:'line',data:{labels:r.periods,datasets:datasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top'},title:{display:true,text:`${mainGroup} → ${subGroup} Trend`}}}});
+            }
+        }
+        
+        function renderPivotTable(){
+            if(!analysisResult || activeVariables.length===0)return;
+            let r=analysisResult;
+            
+            let html='<table class="data-table"><thead><tr><th style="text-align:left;">'+r.mainCol+'</th>';
+            r.periods.forEach(p=>{
+                activeVariables.forEach(v=>{
+                    html+=`<th>${p}<br>(${v})</th>`;
+                });
+            });
+            html+='<th style="background:#1a6b1a;">Row Total</th></tr></thead><tbody>';
+            
+            let colTotals={};
+            r.periods.forEach(p=>{activeVariables.forEach(v=>{colTotals[p+'_'+v]=0;});});
+            let grandSum=0;
+            
+            r.mainGroups.forEach(g=>{
+                let rowTotal=0;
+                html+=`<tr><td class="row-label">${g}</td>`;
+                r.periods.forEach(p=>{
+                    activeVariables.forEach(v=>{
+                        let val=r.data[v].mainByPeriod[g]?.[p]||0;
+                        html+=`<td>${fmtNum(val)}</td>`;
+                        rowTotal+=val;
+                        colTotals[p+'_'+v]+=val;
+                    });
+                });
+                html+=`<td class="total-cell">${fmtNum(rowTotal)}</td></tr>`;
+                grandSum+=rowTotal;
+            });
+            
+            if(document.getElementById('togColTotals').checked){
+                html+=`<tr><td class="row-label" style="background:#dce8f5;">Column Total</td>`;
+                r.periods.forEach(p=>{
+                    activeVariables.forEach(v=>{
+                        html+=`<td class="total-cell">${fmtNum(colTotals[p+'_'+v])}</td>`;
+                    });
+                });
+                html+=`<td class="total-cell">${fmtNum(grandSum)}</td></tr>`;
+            }
+            html+='</tbody></table>';
+            document.getElementById('pivotTableWrapper').innerHTML=html;
+        }
+        
+        function downloadInteractiveReport(){
+            if(!analysisResult || activeVariables.length===0){alert('No analysis results.');return;}
+            let r=analysisResult;
+            
+            let reportHTML=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>ICF-SL Multi-Variable Report</title><script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"><\/script><style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:Oswald,Arial,sans-serif;margin:20px;background:#f5f5f5;color:#000;}h1,h2,h3{color:#004080;font-weight:700;}.header{background:#004080;color:#fff;padding:25px;border-radius:8px;margin-bottom:20px;}.summary-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin:20px 0;}.stat-box{background:#e7f3ff;padding:15px;border-radius:8px;border:2px solid #004080;text-align:center;}.stat-value{font-size:24px;font-weight:bold;color:#004080;}.stat-label{font-size:12px;color:#666;margin-top:5px;}.analysis-tabs{display:flex;border-bottom:3px solid #004080;margin:20px 0;flex-wrap:wrap;}.analysis-tab{padding:15px 25px;cursor:pointer;font-weight:700;font-size:14px;color:#666;text-transform:uppercase;letter-spacing:0.5px;border-bottom:3px solid transparent;margin-bottom:-3px;transition:all 0.2s;}.analysis-tab:hover{color:#004080;background:#e7f3ff;}.analysis-tab.active{color:#004080;border-bottom-color:#004080;background:#fff;}.tab-panel{display:none;padding:20px;background:#fff;border-radius:8px;border:2px solid #004080;}.tab-panel.active{display:block;}.chart-container{height:600px;margin:20px 0;position:relative;}.main-group-btn{padding:10px 20px;background:#fff;border:2px solid #004080;border-radius:20px;cursor:pointer;font-weight:700;margin:8px;color:#004080;font-family:Oswald,Arial;transition:all 0.2s;}.main-group-btn:hover{background:#e7f3ff;}.main-group-btn.active{background:#004080;color:#fff;}.group-buttons-container{display:flex;flex-wrap:wrap;margin:15px 0;}.subgroup-chips{display:flex;flex-wrap:wrap;gap:8px;margin:15px 0;}.subgroup-chip{padding:8px 16px;background:#fff;border:2px solid #004080;border-radius:20px;cursor:pointer;font-weight:600;transition:all 0.2s;}.subgroup-chip:hover{background:#e7f3ff;}.subgroup-chip.active{background:#004080;color:#fff;}.chart-container-group{height:500px;margin:20px 0;}table{width:100%;border-collapse:collapse;margin:15px 0;}th,td{padding:10px;text-align:left;border:1px solid #ddd;}th{background:#004080;color:#fff;font-weight:bold;}tr:nth-child(even){background:#f8f9fa;}.footer{text-align:center;margin-top:40px;font-size:12px;color:#666;border-top:2px solid #004080;padding-top:20px;}</style></head><body><div class="header"><h1>ICF-SL Multi-Variable Analysis Report</h1><p><strong>Generated:</strong> ${new Date().toLocaleString()}</p><p><strong>Variables:</strong> ${activeVariables.join(', ')} | <strong>Aggregation:</strong> ${currentAgg.toUpperCase()}</p><p><strong>Data:</strong> ${r.filtered.length} Records | ${r.periods.length} Periods | ${r.mainGroups.length} Groups</p></div>`;
+
+            reportHTML+=`<div><h2>Summary Statistics</h2><div class="summary-stats"><div class="stat-box"><div class="stat-value">${r.filtered.length.toLocaleString()}</div><div class="stat-label">Records</div></div><div class="stat-box"><div class="stat-value">${r.periods.length}</div><div class="stat-label">Periods</div></div><div class="stat-box"><div class="stat-value">${r.mainGroups.length}</div><div class="stat-label">Main Groups</div></div><div class="stat-box"><div class="stat-value">${activeVariables.length}</div><div class="stat-label">Variables</div></div></div></div>`;
+
+            reportHTML+=`<div class="analysis-tabs"><div class="analysis-tab active" onclick="switchTab('trend')">Annual Trend</div><div class="analysis-tab" onclick="switchTab('group')">Main Groups</div><div class="analysis-tab" onclick="switchTab('sub')">Sub-Groups</div><div class="analysis-tab" onclick="switchTab('table')">Pivot Table</div></div>`;
+
+            reportHTML+=`<div class="tab-panel active" id="panel-trend"><h2>Annual Trend - Selected Variables</h2><div class="chart-container"><canvas id="annualChart"></canvas></div></div>`;
+
+            reportHTML+=`<div class="tab-panel" id="panel-group"><h2>Main Groups Trend Over Periods</h2><p><strong>Click a district to view its trend:</strong></p><div class="group-buttons-container" id="groupButtons"></div><div class="chart-container-group"><canvas id="groupChart"></canvas></div></div>`;
+
+            reportHTML+=`<div class="tab-panel" id="panel-sub"><h2>Sub-Groups by Main Group</h2><p><strong>Select Main Group:</strong></p><div class="group-buttons-container" id="mainGroupButtons"></div><p id="subGroupLabel" style="margin-top:15px;font-weight:bold;color:#004080;"></p><div class="subgroup-chips" id="subGroupButtons"></div><div class="chart-container-group"><canvas id="subChart"></canvas></div></div>`;
+
+            // Pivot table HTML
+            let tableHtml='<div class="tab-panel" id="panel-table"><h2>Pivot Table</h2><table><thead><tr><th style="text-align:left;">'+r.mainCol+'</th>';
+            r.periods.forEach(p=>{
+                activeVariables.forEach(v=>{
+                    tableHtml+=`<th>${p}<br>(${v})</th>`;
+                });
+            });
+            tableHtml+='<th style="background:#1a6b1a;">Row Total</th></tr></thead><tbody>';
+            
+            let colTotals={};
+            r.periods.forEach(p=>{activeVariables.forEach(v=>{colTotals[p+'_'+v]=0;});});
+            let grandSum=0;
+            
+            r.mainGroups.forEach(g=>{
+                let rowTotal=0;
+                tableHtml+=`<tr><td style="font-weight:bold;background:#e7f3ff;">${g}</td>`;
+                r.periods.forEach(p=>{
+                    activeVariables.forEach(v=>{
+                        let val=r.data[v].mainByPeriod[g]?.[p]||0;
+                        tableHtml+=`<td>${val.toLocaleString()}</td>`;
+                        rowTotal+=val;
+                        colTotals[p+'_'+v]+=val;
+                    });
+                });
+                tableHtml+=`<td style="font-weight:bold;background:#dce8f5;">${rowTotal.toLocaleString()}</td></tr>`;
+                grandSum+=rowTotal;
+            });
+
+            tableHtml+=`<tr><td style="font-weight:bold;background:#dce8f5;">Column Total</td>`;
+            r.periods.forEach(p=>{
+                activeVariables.forEach(v=>{
+                    tableHtml+=`<td style="font-weight:bold;background:#dce8f5;">${colTotals[p+'_'+v].toLocaleString()}</td>`;
+                });
+            });
+            tableHtml+=`<td style="font-weight:bold;background:#1a6b1a;color:#fff;">${grandSum.toLocaleString()}</td></tr></tbody></table></div>`;
+            reportHTML+=tableHtml;
+
+            reportHTML+=`<div class="footer"><p>National Malaria Control Programme | Ministry of Health, Sierra Leone</p><p>© 2025 ICF-SL | Multi-Variable Hierarchical Data Analysis</p></div><script>
+            function switchTab(tab){
+                document.querySelectorAll('.analysis-tab').forEach(t=>t.classList.remove('active'));
+                document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+                event.target.classList.add('active');
+                document.getElementById('panel-'+tab).classList.add('active');
+                setTimeout(()=>{if(tab==='trend')drawAnnualChart(); else if(tab==='group')buildGroupButtons(); else if(tab==='sub')buildMainGroupButtons();},50);
+            }
+            
+            const colorPalette=['#004080','#dc3545','#28a745','#ffc107','#17a2b8','#6f42c1','#fd7e14','#e83e8c'];
+            const periods=${JSON.stringify(r.periods)};
+            const mainGroups=${JSON.stringify(r.mainGroups)};
+            const activeVars=${JSON.stringify(activeVariables)};
+            const varData=${JSON.stringify(Object.fromEntries(activeVariables.map(v=>[v,{byPeriod:Object.fromEntries(r.periods.map(p=>[p,r.data[v].byPeriod[p]||0])),mainByPeriod:r.data[v].mainByPeriod,subByMainPeriod:r.data[v].subByMainPeriod}])))};
+            const subMap=${JSON.stringify(r.subMap)};
+            let chartsDrawn={annual:false,group:false,sub:false};
+            let currentGroupChart=null;
+            let currentSubChart=null;
+            let activeMainGroup='';
+            let activeSubGroup='';
+            
+            function drawAnnualChart(){
+                if(chartsDrawn.annual)return;
+                new Chart(document.getElementById('annualChart'),{type:'line',data:{labels:periods,datasets:activeVars.map((v,i)=>({label:v,data:periods.map(p=>varData[v].byPeriod[p]||0),borderColor:colorPalette[i%colorPalette.length],backgroundColor:colorPalette[i%colorPalette.length]+'30',borderWidth:3,tension:0.4,fill:false}))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top'}}}});
+                chartsDrawn.annual=true;
+            }
+            
+            function buildGroupButtons(){
+                let html='';
+                mainGroups.forEach(g=>{
+                    html+=\`<button class="main-group-btn" onclick="drawGroupChart('\${g}')\">\${g}</button>\`;
+                });
+                document.getElementById('groupButtons').innerHTML=html;
+                if(mainGroups.length>0)drawGroupChart(mainGroups[0]);
+            }
+            
+            function drawGroupChart(group){
+                document.querySelectorAll('#groupButtons .main-group-btn').forEach(b=>{
+                    b.classList.remove('active');
+                    if(b.textContent===group)b.classList.add('active');
+                });
+                
+                if(currentGroupChart)currentGroupChart.destroy();
+                const groupDatasets=activeVars.map((v,i)=>({label:v,data:periods.map(p=>varData[v].mainByPeriod[group]?.[p]||0),borderColor:colorPalette[i%colorPalette.length],borderWidth:3,fill:false,tension:0.4}));
+                currentGroupChart=new Chart(document.getElementById('groupChart'),{type:'line',data:{labels:periods,datasets:groupDatasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top'},title:{display:true,text:\`\${group} Trend\`}}}});
+            }
+            
+            function buildMainGroupButtons(){
+                let html='';
+                mainGroups.forEach(g=>{
+                    html+=\`<button class="main-group-btn" onclick="selectMainGroup('\${g}')\">\${g}</button>\`;
+                });
+                document.getElementById('mainGroupButtons').innerHTML=html;
+                if(mainGroups.length>0)selectMainGroup(mainGroups[0]);
+            }
+            
+            function selectMainGroup(group){
+                activeMainGroup=group;
+                document.querySelectorAll('#mainGroupButtons .main-group-btn').forEach(b=>{
+                    b.classList.remove('active');
+                    if(b.textContent===group)b.classList.add('active');
+                });
+                
+                const subs=subMap[group]||[];
+                let html='';
+                subs.forEach(sub=>{
+                    html+=\`<button class="subgroup-chip" onclick="drawSubGroupChart('\${group}','\${sub}')\">\${sub}</button>\`;
+                });
+                document.getElementById('subGroupButtons').innerHTML=html;
+                document.getElementById('subGroupLabel').textContent='Select Sub-Group under '+group+':';
+                
+                if(subs.length>0)drawSubGroupChart(group,subs[0]);
+            }
+            
+            function drawSubGroupChart(mainGroup,subGroup){
+                activeMainGroup=mainGroup;
+                activeSubGroup=subGroup;
+                document.querySelectorAll('#subGroupButtons .subgroup-chip').forEach(b=>{
+                    b.classList.remove('active');
+                    if(b.textContent===subGroup)b.classList.add('active');
+                });
+                
+                if(currentSubChart)currentSubChart.destroy();
+                const subDatasets=activeVars.map((v,i)=>{
+                    if(!varData[v].subByMainPeriod[mainGroup]||!varData[v].subByMainPeriod[mainGroup][subGroup])return null;
+                    return {label:v,data:periods.map(p=>varData[v].subByMainPeriod[mainGroup][subGroup][p]||0),borderColor:colorPalette[i%colorPalette.length],borderWidth:3,fill:false,tension:0.4};
+                }).filter(d=>d!==null);
+                
+                currentSubChart=new Chart(document.getElementById('subChart'),{type:'line',data:{labels:periods,datasets:subDatasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top'},title:{display:true,text:\`\${mainGroup} → \${subGroup}\`}}}});
+            }
+            
+            drawAnnualChart();
+            <\/script></body></html>`;
+            
+            let blob=new Blob([reportHTML],{type:'text/html'});
+            let a=document.createElement('a');
+            a.href=URL.createObjectURL(blob);
+            a.download='ICF-SL_MultiVariable_Report_'+new Date().getTime()+'.html';
+            a.click();
+            URL.revokeObjectURL(a.href);
+        }
+        
+        function exportExcel(){
+            if(!analysisResult || activeVariables.length===0){alert('No analysis results.');return;}
+            let r=analysisResult;
+            let wb=XLSX.utils.book_new();
+            
+            let summaryData=[['ICF-SL Multi-Variable Analysis'],['Generated',new Date().toLocaleString()],['Variables',activeVariables.join(', ')],[],['Summary'],['Records',r.filtered.length],['Periods',r.periods.length],['Groups',r.mainGroups.length]];
+            let ws1=XLSX.utils.aoa_to_sheet(summaryData);
+            XLSX.utils.book_append_sheet(wb,ws1,'Summary');
+            
+            activeVariables.forEach(v=>{
+                let d=r.data[v];
+                let trendData=[['Period',v]];
+                r.periods.forEach(p=>{trendData.push([p,d.byPeriod[p]||0]);});
+                let ws=XLSX.utils.aoa_to_sheet(trendData);
+                XLSX.utils.book_append_sheet(wb,ws,'Trend_'+v);
+                
+                let mainGroupsData=[[r.mainCol,...r.periods.map(String),'Total']];
+                r.mainGroups.forEach(g=>{
+                    let row=[g],rowTotal=0;
+                    r.periods.forEach(p=>{
+                        let val=d.mainByPeriod[g]?.[p]||0;
+                        row.push(val);
+                        rowTotal+=val;
+                    });
+                    row.push(rowTotal);
+                    mainGroupsData.push(row);
+                });
+                let wsMain=XLSX.utils.aoa_to_sheet(mainGroupsData);
+                XLSX.utils.book_append_sheet(wb,wsMain,'Groups_'+v);
+            });
+            
+            XLSX.writeFile(wb,'ICF-SL_MultiVariable_Analysis_'+new Date().getTime()+'.xlsx');
+        }
+        
+        function resetConfig(){
+            selectedYear='';selectedPeriod='';selectedMain='';selectedSub='';selectedValues=[];currentAgg='sum';
+            document.querySelectorAll('.var-chip').forEach(c=>c.classList.remove('selected','selected-green'));
+            document.getElementById('mainFilterSection').classList.add('hidden');
+            document.getElementById('subFilterSection').classList.add('hidden');
+        }
+        
+        function resetAll(){
+            resetConfig();
+            rawData=[];analysisResult=null;activeVariables=[];
+            document.getElementById('uploadBox').classList.remove('loaded');
+            document.getElementById('uploadStatus').innerHTML='';
+            document.getElementById('fileInput').value='';
+            document.getElementById('configSection').classList.add('hidden');
+            document.getElementById('resultsSection').classList.add('hidden');
+            document.getElementById('dataPreview').classList.add('hidden');
+            updateRoadmap(1);
+        }
+    </script>
+</body>
+</html>
